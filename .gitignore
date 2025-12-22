@@ -1,3 +1,6 @@
+wasm/target
+wasm/pkg
+
 # Logs
 logs
 *.log
