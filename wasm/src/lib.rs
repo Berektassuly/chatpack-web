@@ -50,10 +50,10 @@ pub fn version() -> String {
 
 fn parse_source(s: &str) -> Result<Source, JsValue> {
     match s.to_lowercase().as_str() {
-        "telegram" => Ok(Source::Telegram),
-        "whatsapp" => Ok(Source::WhatsApp),
-        "instagram" => Ok(Source::Instagram),
-        "discord" => Ok(Source::Discord),
+        "telegram" | "tg" => Ok(Source::Telegram),
+        "whatsapp" | "wa" => Ok(Source::WhatsApp),
+        "instagram" | "ig" => Ok(Source::Instagram),
+        "discord" | "dc" => Ok(Source::Discord),
         _ => Err(JsValue::from_str(&format!(
             "Unknown source: {}. Expected: telegram, whatsapp, instagram, discord",
             s
