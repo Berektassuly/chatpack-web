@@ -1,8 +1,5 @@
 import { memo, useCallback, useState, useRef } from 'react'
 
-// File size limit: 50MB
-const MAX_FILE_SIZE = 50 * 1024 * 1024
-
 interface DropZoneProps {
   onFileSelect: (file: File | null) => void
   file: File | null
@@ -17,19 +14,7 @@ export const DropZone = memo(function DropZone({
   accept = '.json,.txt,.csv',
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false)
-  const [sizeError, setSizeError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  const validateAndSelect = useCallback((selectedFile: File) => {
-    setSizeError(null)
-    
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setSizeError(`File too large (${formatFileSize(selectedFile.size)}). Max: ${formatFileSize(MAX_FILE_SIZE)}`)
-      return
-    }
-    
-    onFileSelect(selectedFile)
-  }, [onFileSelect])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -54,9 +39,9 @@ export const DropZone = memo(function DropZone({
 
     const files = e.dataTransfer.files
     if (files.length > 0) {
-      validateAndSelect(files[0])
+      onFileSelect(files[0])
     }
-  }, [disabled, validateAndSelect])
+  }, [disabled, onFileSelect])
 
   const handleClick = useCallback(() => {
     if (!disabled && inputRef.current) {
@@ -67,13 +52,12 @@ export const DropZone = memo(function DropZone({
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      validateAndSelect(files[0])
+      onFileSelect(files[0])
     }
-  }, [validateAndSelect])
+  }, [onFileSelect])
 
   const handleRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    setSizeError(null)
     onFileSelect(null)
   }, [onFileSelect])
 
@@ -100,7 +84,6 @@ export const DropZone = memo(function DropZone({
         ...(isDragOver ? styles.containerDragOver : {}),
         ...(file ? styles.containerWithFile : {}),
         ...(disabled ? styles.containerDisabled : {}),
-        ...(sizeError ? styles.containerError : {}),
       }}
     >
       <input
@@ -113,19 +96,7 @@ export const DropZone = memo(function DropZone({
         aria-hidden="true"
       />
 
-      {sizeError ? (
-        <div style={styles.errorInfo}>
-          <div style={styles.errorIcon}>⚠️</div>
-          <div style={styles.errorText}>{sizeError}</div>
-          <button
-            onClick={handleRemove}
-            style={styles.retryButton}
-            aria-label="Try another file"
-          >
-            Select another file
-          </button>
-        </div>
-      ) : file ? (
+      {file ? (
         <div style={styles.fileInfo}>
           <div style={styles.fileIcon} aria-hidden="true">📄</div>
           <div style={styles.fileDetails}>
@@ -151,7 +122,7 @@ export const DropZone = memo(function DropZone({
               {isDragOver ? 'Drop file here' : 'Drop file or click to select'}
             </span>
             <span style={styles.textSecondary}>
-              .json, .txt, .csv • up to {formatFileSize(MAX_FILE_SIZE)}
+              .json, .txt, .csv
             </span>
           </div>
         </div>
@@ -194,10 +165,6 @@ const styles: Record<string, React.CSSProperties> = {
   containerDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
-  },
-  containerError: {
-    borderColor: 'var(--accent-red)',
-    background: 'rgba(239, 68, 68, 0.1)',
   },
   input: {
     display: 'none',
@@ -270,31 +237,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '14px',
     transition: 'all var(--transition-fast)',
-    minWidth: '32px',  // Для мобильных устройств
-  },
-  errorInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '12px',
-    textAlign: 'center',
-  },
-  errorIcon: {
-    fontSize: '32px',
-  },
-  errorText: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '13px',
-    color: 'var(--accent-red)',
-  },
-  retryButton: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '12px',
-    padding: '8px 16px',
-    border: '1px solid var(--border-default)',
-    borderRadius: 'var(--radius-md)',
-    background: 'var(--bg-secondary)',
-    color: 'var(--text-secondary)',
-    cursor: 'pointer',
+    minWidth: '32px',
   },
 }
