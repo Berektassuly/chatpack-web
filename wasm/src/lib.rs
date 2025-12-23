@@ -12,11 +12,19 @@ use chatpack::parsers::create_parser;
 /// * `input` - Raw content of the chat export file
 /// * `source` - Source platform: "telegram", "whatsapp", "instagram", "discord"
 /// * `format` - Output format: "csv", "json", "jsonl"
+/// * `include_timestamps` - Whether to include timestamps in output
+/// * `include_replies` - Whether to include reply references in output
 ///
 /// # Returns
 /// Converted content as string, or error message
 #[wasm_bindgen]
-pub fn convert(input: &str, source: &str, format: &str) -> Result<String, JsValue> {
+pub fn convert(
+    input: &str,
+    source: &str,
+    format: &str,
+    include_timestamps: bool,
+    include_replies: bool,
+) -> Result<String, JsValue> {
     let source = parse_source(source)?;
     let format = parse_format(format)?;
 
@@ -29,8 +37,14 @@ pub fn convert(input: &str, source: &str, format: &str) -> Result<String, JsValu
     // Merge consecutive messages from same sender
     let merged = merge_consecutive(messages);
 
-    // Convert to output format
-    let config = OutputConfig::new().with_timestamps();
+    // Build output config based on flags
+    let mut config = OutputConfig::new();
+    if include_timestamps {
+        config = config.with_timestamps();
+    }
+    if include_replies {
+        config = config.with_replies();
+    }
 
     let output = match format {
         OutputFormat::Csv => to_csv(&merged, &config),

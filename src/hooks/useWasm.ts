@@ -1,15 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
 
 interface WasmModule {
-  convert: (input: string, source: string, format: string) => string
+  convert: (
+    input: string,
+    source: string,
+    format: string,
+    includeTimestamps: boolean,
+    includeReplies: boolean
+  ) => string
   version: () => string
+}
+
+interface ConvertOptions {
+  timestamps?: boolean
+  replays?: boolean
 }
 
 interface UseWasmResult {
   isLoading: boolean
   isReady: boolean
   error: string | null
-  convert: (input: string, source: string, format: string) => Promise<string>
+  convert: (input: string, source: string, format: string, options?: ConvertOptions) => Promise<string>
   version: string | null
   retry: () => void
   retryCount: number
@@ -28,14 +39,12 @@ const ERROR_MESSAGES: Record<string, string> = {
 }
 
 function humanizeError(error: string): string {
-  // Ищем совпадение с известными ошибками
   for (const [key, message] of Object.entries(ERROR_MESSAGES)) {
     if (error.toLowerCase().includes(key.toLowerCase())) {
       return message
     }
   }
   
-  // Если ошибка короткая и понятная, возвращаем как есть
   if (error.length < 100 && !error.includes('panicked') && !error.includes('wasm')) {
     return error
   }
@@ -55,7 +64,6 @@ export function useWasm(): UseWasmResult {
       setIsLoading(true)
       setError(null)
       
-      // Dynamic import of WASM module
       const wasm = await import('../wasm/chatpack_wasm.js')
       await wasm.default()
       
@@ -79,18 +87,24 @@ export function useWasm(): UseWasmResult {
   }, [])
 
   const convert = useCallback(
-    async (input: string, source: string, format: string): Promise<string> => {
+    async (
+      input: string,
+      source: string,
+      format: string,
+      options: ConvertOptions = {}
+    ): Promise<string> => {
       if (!module) {
         throw new Error('Converter not loaded. Refresh the page and try again.')
       }
       
-      // Check for empty input
       if (!input || input.trim().length === 0) {
         throw new Error('File is empty or contains no data')
       }
       
+      const { timestamps = false, replays = false } = options
+      
       try {
-        return module.convert(input, source, format)
+        return module.convert(input, source, format, timestamps, replays)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err)
         throw new Error(humanizeError(errorMessage))
@@ -112,7 +126,6 @@ export function useWasm(): UseWasmResult {
 
 // Estimate processing time based on file size
 export function estimateProcessingTime(fileSize: number): string {
-  // ~100K messages/sec, ~100 bytes per message
   const estimatedMessages = fileSize / 100
   const estimatedSeconds = estimatedMessages / 100000
   
@@ -125,8 +138,7 @@ export function estimateProcessingTime(fileSize: number): string {
   }
 }
 
-// Хелпер для определения, нужен ли progress bar
+// Helper to determine if progress bar is needed
 export function needsProgressIndicator(fileSize: number): boolean {
-  // Показываем progress для файлов > 1MB
   return fileSize > 1024 * 1024
 }

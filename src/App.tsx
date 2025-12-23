@@ -37,7 +37,7 @@ export default function App() {
   const [result, setResult] = useState<ConversionResult | null>(null)
   const [progress, setProgress] = useState<number | undefined>(undefined)
 
-  // Обработка выбора файла с улучшенным автоопределением
+  // Handle file selection with auto-detection
   const handleFileSelect = useCallback((selectedFile: File | null) => {
     setFile(selectedFile)
     setStatus('idle')
@@ -46,7 +46,7 @@ export default function App() {
     setProgress(undefined)
 
     if (selectedFile) {
-      // Улучшенное автоопределение источника
+      // Auto-detect source from filename
       const detectedSource = detectSource(selectedFile.name)
       if (detectedSource) {
         setSource(detectedSource)
@@ -61,7 +61,7 @@ export default function App() {
     setError(null)
     setProgress(undefined)
 
-    // Симуляция прогресса для больших файлов
+    // Simulate progress for large files
     const showProgress = needsProgressIndicator(file.size)
     let progressInterval: ReturnType<typeof setInterval> | null = null
     
@@ -69,7 +69,7 @@ export default function App() {
       setProgress(0)
       let currentProgress = 0
       progressInterval = setInterval(() => {
-        // Логарифмический прогресс — быстро до 80%, потом медленнее
+        // Logarithmic progress — fast to 80%, then slower
         currentProgress = Math.min(95, currentProgress + (95 - currentProgress) * 0.1)
         setProgress(currentProgress)
       }, 100)
@@ -77,9 +77,12 @@ export default function App() {
 
     try {
       const content = await file.text()
-      const output = await convert(content, source, format)
+      const output = await convert(content, source, format, {
+        timestamps: flags.timestamps,
+        replays: flags.replays,
+      })
       
-      // Завершаем прогресс
+      // Complete progress
       if (progressInterval) {
         clearInterval(progressInterval)
         setProgress(100)
@@ -89,9 +92,9 @@ export default function App() {
       const baseName = file.name.replace(/\.[^/.]+$/, '')
       const filename = `${baseName}_chatpack.${extension}`
 
-      // Подсчёт сообщений
+      // Count messages
       const lineCount = output.split('\n').filter(line => line.trim()).length
-      const messageCount = format === 'csv' ? lineCount - 1 : lineCount  // CSV имеет заголовок
+      const messageCount = format === 'csv' ? lineCount - 1 : lineCount  // CSV has header
 
       setResult({
         content: output,
@@ -102,7 +105,7 @@ export default function App() {
       })
       setStatus('success')
       
-      // Сбрасываем прогресс после успеха
+      // Reset progress after success
       setTimeout(() => setProgress(undefined), 500)
     } catch (err) {
       if (progressInterval) {
@@ -112,7 +115,7 @@ export default function App() {
       setError(err instanceof Error ? err.message : 'Conversion failed')
       setStatus('error')
     }
-  }, [file, wasmReady, convert, source, format])
+  }, [file, wasmReady, convert, source, format, flags])
 
   const handleDownload = useCallback(() => {
     if (!result) return
@@ -128,7 +131,7 @@ export default function App() {
     URL.revokeObjectURL(url)
   }, [result])
 
-  // Показываем оценку времени для больших файлов
+  // Show estimated time for large files
   const estimatedTime = file && needsProgressIndicator(file.size) 
     ? estimateProcessingTime(file.size) 
     : null
