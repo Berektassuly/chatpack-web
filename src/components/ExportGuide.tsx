@@ -19,76 +19,76 @@ interface PlatformGuide {
 const guides: Record<Source, PlatformGuide> = {
   telegram: {
     title: 'Telegram',
-    icon: '✈️',
+    icon: '',
     color: 'var(--telegram-color)',
     fileFormat: 'result.json',
     steps: [
-      'Откройте чат в Telegram Desktop',
-      'Нажмите ⋮ (три точки) → Export chat history',
-      'Снимите галочки с Media, Voice messages и т.д.',
-      'Формат: JSON (Machine-readable JSON)',
-      'Нажмите Export и дождитесь завершения',
-      'Загрузите файл result.json',
+      'Open the chat in Telegram Desktop',
+      'Click ⋮ (three dots) → Export chat history',
+      'Uncheck Media, Voice messages, etc.',
+      'Format: JSON (Machine-readable JSON)',
+      'Click Export and wait for completion',
+      'Upload the result.json file',
     ],
     notes: [
-      'Экспорт доступен только в Telegram Desktop',
-      'Мобильное приложение не поддерживает экспорт',
+      'Export is only available in Telegram Desktop',
+      'Mobile app does not support export',
     ],
   },
   whatsapp: {
     title: 'WhatsApp',
-    icon: '💬',
+    icon: '',
     color: 'var(--whatsapp-color)',
     fileFormat: '_chat.txt',
     steps: [
-      'Откройте чат в WhatsApp',
-      'Нажмите ⋮ → More → Export chat',
-      'Выберите "Without Media"',
-      'Сохраните или отправьте себе файл',
-      'Загрузите полученный .txt файл',
+      'Open the chat in WhatsApp',
+      'Tap ⋮ → More → Export chat',
+      'Select "Without Media"',
+      'Save or send the file to yourself',
+      'Upload the .txt file',
     ],
     notes: [
-      'Формат даты зависит от региональных настроек телефона',
-      'Экспорт доступен на iOS и Android',
+      'Date format depends on your phone regional settings',
+      'Export is available on iOS and Android',
     ],
   },
   instagram: {
     title: 'Instagram',
-    icon: '📷',
+    icon: '',
     color: 'var(--instagram-color)',
     fileFormat: 'message_1.json',
     steps: [
-      'Откройте instagram.com в браузере',
+      'Open instagram.com in your browser',
       'Settings → Your Activity → Download your information',
-      'Выберите "Some of your information"',
-      'Отметьте только "Messages"',
-      'Формат: JSON, Date range: All time',
-      'Нажмите "Create files" и дождитесь email',
-      'Скачайте архив и распакуйте',
-      'Найдите messages/inbox/[chat]/message_1.json',
+      'Select "Some of your information"',
+      'Check only "Messages"',
+      'Format: JSON, Date range: All time',
+      'Click "Create files" and wait for email',
+      'Download and extract the archive',
+      'Find messages/inbox/[chat]/message_1.json',
     ],
     notes: [
-      'Запрос может обрабатываться до 48 часов',
-      'Архив приходит на email',
+      'Request may take up to 48 hours to process',
+      'Archive will be sent to your email',
     ],
   },
   discord: {
     title: 'Discord',
-    icon: '🎮',
+    icon: '',
     color: 'var(--discord-color)',
     fileFormat: 'messages.json',
     steps: [
-      'Откройте discord.com в браузере',
+      'Open discord.com in your browser',
       'User Settings → Privacy & Safety',
       'Scroll down to "Request all of my Data"',
-      'Нажмите Request Data',
-      'Дождитесь email с ссылкой на скачивание',
-      'Распакуйте архив',
-      'Найдите messages/[channel_id]/messages.json',
+      'Click Request Data',
+      'Wait for email with download link',
+      'Extract the archive',
+      'Find messages/[channel_id]/messages.json',
     ],
     notes: [
-      'Запрос обрабатывается до 30 дней',
-      'Для DM используйте сторонние инструменты',
+      'Request may take up to 30 days to process',
+      'For DMs use third-party tools',
     ],
   },
 }
@@ -128,13 +128,13 @@ export const ExportGuide = memo(function ExportGuide({
           <div style={styles.titleRow}>
             <span style={styles.icon}>{guide.icon}</span>
             <h2 id="export-guide-title" style={{ ...styles.title, color: guide.color }}>
-              Как экспортировать из {guide.title}
+              How to export from {guide.title}
             </h2>
           </div>
           <button
             onClick={onClose}
             style={styles.closeButton}
-            aria-label="Закрыть"
+            aria-label="Close"
           >
             ✕
           </button>
@@ -142,7 +142,7 @@ export const ExportGuide = memo(function ExportGuide({
 
         <div style={styles.content}>
           <div style={styles.fileFormat}>
-            <span style={styles.fileFormatLabel}>Нужный файл:</span>
+            <span style={styles.fileFormatLabel}>Required file:</span>
             <code style={styles.fileFormatValue}>{guide.fileFormat}</code>
           </div>
 
@@ -157,7 +157,7 @@ export const ExportGuide = memo(function ExportGuide({
 
           {guide.notes && (
             <div style={styles.notes}>
-              <span style={styles.notesTitle}>💡 Примечания:</span>
+              <span style={styles.notesTitle}>💡 Notes:</span>
               <ul style={styles.notesList}>
                 {guide.notes.map((note, index) => (
                   <li key={index} style={styles.note}>{note}</li>
@@ -169,7 +169,7 @@ export const ExportGuide = memo(function ExportGuide({
 
         <div style={styles.footer}>
           <button onClick={onClose} style={styles.doneButton}>
-            Понятно
+            Got it
           </button>
         </div>
       </div>
@@ -177,7 +177,7 @@ export const ExportGuide = memo(function ExportGuide({
   )
 })
 
-// Кнопка-триггер для открытия гайда
+// Trigger button to open the guide
 interface ExportGuideButtonProps {
   source: Source
 }
@@ -192,11 +192,11 @@ export const ExportGuideButton = memo(function ExportGuideButton({
       <button
         onClick={() => setIsOpen(true)}
         style={styles.helpButton}
-        aria-label={`Как экспортировать из ${guides[source].title}`}
-        title="Как экспортировать?"
+        aria-label={`How to export from ${guides[source].title}`}
+        title="How to export?"
       >
         <span style={styles.helpIcon}>?</span>
-        <span style={styles.helpText}>Как экспортировать?</span>
+        <span style={styles.helpText}>How to export?</span>
       </button>
       <ExportGuide
         source={source}
@@ -401,6 +401,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
   },
   helpText: {
-    // Скрываем на мобильных
+    // Hidden on mobile
   },
 }
