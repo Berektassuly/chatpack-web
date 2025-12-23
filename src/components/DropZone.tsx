@@ -1,10 +1,10 @@
 import { memo, useCallback, useState, useRef } from 'react'
 
-// Лимит размера файла: 50MB
+// File size limit: 50MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024
 
 interface DropZoneProps {
-  onFileSelect: (file: File | null) => void  // ✅ Исправлена типизация
+  onFileSelect: (file: File | null) => void
   file: File | null
   disabled?: boolean
   accept?: string
@@ -24,7 +24,7 @@ export const DropZone = memo(function DropZone({
     setSizeError(null)
     
     if (selectedFile.size > MAX_FILE_SIZE) {
-      setSizeError(`Файл слишком большой (${formatFileSize(selectedFile.size)}). Максимум: ${formatFileSize(MAX_FILE_SIZE)}`)
+      setSizeError(`File too large (${formatFileSize(selectedFile.size)}). Max: ${formatFileSize(MAX_FILE_SIZE)}`)
       return
     }
     
@@ -74,7 +74,7 @@ export const DropZone = memo(function DropZone({
   const handleRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     setSizeError(null)
-    onFileSelect(null)  // ✅ Теперь корректно передаём null
+    onFileSelect(null)
   }, [onFileSelect])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -88,7 +88,7 @@ export const DropZone = memo(function DropZone({
     <div
       role="button"
       tabIndex={disabled ? -1 : 0}
-      aria-label={file ? `Выбран файл: ${file.name}` : 'Перетащите файл или нажмите для выбора'}
+      aria-label={file ? `Selected file: ${file.name}` : 'Drop file or click to select'}
       aria-disabled={disabled}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -120,9 +120,9 @@ export const DropZone = memo(function DropZone({
           <button
             onClick={handleRemove}
             style={styles.retryButton}
-            aria-label="Попробовать другой файл"
+            aria-label="Try another file"
           >
-            Выбрать другой файл
+            Select another file
           </button>
         </div>
       ) : file ? (
@@ -135,8 +135,8 @@ export const DropZone = memo(function DropZone({
           <button
             onClick={handleRemove}
             style={styles.removeButton}
-            title="Удалить файл"
-            aria-label="Удалить выбранный файл"
+            title="Remove file"
+            aria-label="Remove selected file"
           >
             ✕
           </button>
@@ -148,10 +148,10 @@ export const DropZone = memo(function DropZone({
           </div>
           <div style={styles.text}>
             <span style={styles.textPrimary}>
-              {isDragOver ? 'Отпустите файл' : 'Перетащите файл или нажмите для выбора'}
+              {isDragOver ? 'Drop file here' : 'Drop file or click to select'}
             </span>
             <span style={styles.textSecondary}>
-              .json, .txt, .csv • до {formatFileSize(MAX_FILE_SIZE)}
+              .json, .txt, .csv • up to {formatFileSize(MAX_FILE_SIZE)}
             </span>
           </div>
         </div>

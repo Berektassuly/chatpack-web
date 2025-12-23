@@ -15,16 +15,16 @@ interface UseWasmResult {
   retryCount: number
 }
 
-// Человекочитаемые сообщения об ошибках
+// Human-readable error messages
 const ERROR_MESSAGES: Record<string, string> = {
-  'Unknown source': 'Неизвестный источник. Поддерживаются: Telegram, WhatsApp, Instagram, Discord',
-  'Unknown format': 'Неизвестный формат. Поддерживаются: CSV, JSON, JSONL',
-  'Failed to parse': 'Не удалось распознать файл. Убедитесь, что это экспорт из поддерживаемого мессенджера',
-  'Invalid JSON': 'Некорректный JSON. Проверьте целостность файла',
-  'Empty input': 'Файл пуст или не содержит сообщений',
-  'WASM': 'Ошибка загрузки конвертера. Попробуйте обновить страницу',
-  'network': 'Ошибка сети. Проверьте подключение к интернету',
-  'default': 'Произошла ошибка при конвертации',
+  'Unknown source': 'Unknown source. Supported: Telegram, WhatsApp, Instagram, Discord',
+  'Unknown format': 'Unknown format. Supported: CSV, JSON, JSONL',
+  'Failed to parse': 'Failed to parse file. Make sure it\'s an export from a supported messenger',
+  'Invalid JSON': 'Invalid JSON. Check file integrity',
+  'Empty input': 'File is empty or contains no messages',
+  'WASM': 'Failed to load converter. Try refreshing the page',
+  'network': 'Network error. Check your internet connection',
+  'default': 'An error occurred during conversion',
 }
 
 function humanizeError(error: string): string {
@@ -81,12 +81,12 @@ export function useWasm(): UseWasmResult {
   const convert = useCallback(
     async (input: string, source: string, format: string): Promise<string> => {
       if (!module) {
-        throw new Error('Конвертер не загружен. Обновите страницу и попробуйте снова.')
+        throw new Error('Converter not loaded. Refresh the page and try again.')
       }
       
-      // Проверка на пустой ввод
+      // Check for empty input
       if (!input || input.trim().length === 0) {
-        throw new Error('Файл пуст или не содержит данных')
+        throw new Error('File is empty or contains no data')
       }
       
       try {
@@ -110,18 +110,18 @@ export function useWasm(): UseWasmResult {
   }
 }
 
-// Отдельная функция для оценки размера файла и времени обработки
+// Estimate processing time based on file size
 export function estimateProcessingTime(fileSize: number): string {
-  // Примерно 100K сообщений/сек, ~100 байт на сообщение
+  // ~100K messages/sec, ~100 bytes per message
   const estimatedMessages = fileSize / 100
   const estimatedSeconds = estimatedMessages / 100000
   
   if (estimatedSeconds < 1) {
-    return 'менее секунды'
+    return 'less than a second'
   } else if (estimatedSeconds < 60) {
-    return `~${Math.ceil(estimatedSeconds)} сек.`
+    return `~${Math.ceil(estimatedSeconds)} sec`
   } else {
-    return `~${Math.ceil(estimatedSeconds / 60)} мин.`
+    return `~${Math.ceil(estimatedSeconds / 60)} min`
   }
 }
 

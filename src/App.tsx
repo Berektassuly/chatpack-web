@@ -109,7 +109,7 @@ export default function App() {
         clearInterval(progressInterval)
       }
       setProgress(undefined)
-      setError(err instanceof Error ? err.message : 'Ошибка конвертации')
+      setError(err instanceof Error ? err.message : 'Conversion failed')
       setStatus('error')
     }
   }, [file, wasmReady, convert, source, format])
@@ -137,17 +137,17 @@ export default function App() {
     <div style={styles.app}>
       {/* Skip link for accessibility */}
       <a href="#main-content" style={styles.skipLink}>
-        Перейти к основному содержимому
+        Skip to main content
       </a>
 
       {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerContent}>
-          <a href="/" style={styles.logo} aria-label="chatpack — на главную">
+          <a href="/" style={styles.logo} aria-label="chatpack — home">
             <span style={styles.logoIcon} aria-hidden="true">📦</span>
             <span style={styles.logoText}>chatpack</span>
           </a>
-          <nav style={styles.nav} aria-label="Основная навигация">
+          <nav style={styles.nav} aria-label="Main navigation">
             <a href="https://github.com/berektassuly/chatpack" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
               GitHub
             </a>
@@ -155,7 +155,7 @@ export default function App() {
               Crates.io
             </a>
             <a href="https://berektassuly.com/" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
-              Блог
+              Blog
             </a>
             <a href="https://www.linkedin.com/in/mukhammedali-berektassuly/" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
               LinkedIn
@@ -170,21 +170,21 @@ export default function App() {
           {/* Hero */}
           <section style={styles.hero}>
             <h1 style={styles.title}>
-              Подготовьте чаты для <span style={styles.titleAccent}>RAG / LLM</span>
+              Prepare chat data for <span style={styles.titleAccent}>RAG / LLM</span>
             </h1>
             <p style={styles.subtitle}>
-              Сжатие экспортов Telegram, WhatsApp, Instagram, Discord в <strong>13 раз</strong>.
+              Compress Telegram, WhatsApp, Instagram, Discord exports <strong>13x</strong>.
               <br />
-              <span style={styles.privacyNote}>🔒 Работает в браузере — файлы не покидают ваше устройство.</span>
+              <span style={styles.privacyNote}>🔒 Works in browser — files never leave your device.</span>
             </p>
           </section>
 
           {/* Converter Card */}
-          <section style={styles.card} aria-label="Конвертер">
+          <section style={styles.card} aria-label="Converter">
             {wasmLoading && (
               <div style={styles.wasmLoading} role="status" aria-live="polite">
                 <span style={styles.spinner} aria-hidden="true">⟳</span>
-                <span>Загрузка конвертера...</span>
+                <span>Loading converter...</span>
               </div>
             )}
 
@@ -192,7 +192,7 @@ export default function App() {
               <div style={styles.wasmError} role="alert">
                 <span>⚠️ {wasmError}</span>
                 <button onClick={retryWasm} style={styles.retryButton}>
-                  Попробовать снова {retryCount > 0 && `(${retryCount})`}
+                  Try again {retryCount > 0 && `(${retryCount})`}
                 </button>
               </div>
             )}
@@ -205,7 +205,7 @@ export default function App() {
                   disabled={status === 'converting'}
                 />
 
-                {/* Controls Row - выровненные в ряд */}
+                {/* Controls Row - aligned */}
                 <div style={styles.controlsRow}>
                   <div style={styles.controlGroup}>
                     <div style={styles.controlHeader}>
@@ -220,7 +220,9 @@ export default function App() {
                   </div>
                   
                   <div style={styles.controlGroup}>
-                    <span style={styles.controlLabel}>OUTPUT FORMAT</span>
+                    <div style={styles.controlHeader}>
+                      <span style={styles.controlLabel}>OUTPUT FORMAT</span>
+                    </div>
                     <FormatDropdown
                       value={format}
                       onChange={setFormat}
@@ -229,7 +231,9 @@ export default function App() {
                   </div>
                   
                   <div style={styles.controlGroup}>
-                    <span style={styles.controlLabel}>FLAGS</span>
+                    <div style={styles.controlHeader}>
+                      <span style={styles.controlLabel}>FLAGS</span>
+                    </div>
                     <FlagsSelector
                       value={flags}
                       onChange={setFlags}
@@ -247,10 +251,10 @@ export default function App() {
                   />
                 </div>
 
-                {/* Оценка времени для больших файлов */}
+                {/* Estimated time for large files */}
                 {file && estimatedTime && status !== 'success' && (
                   <p style={styles.estimatedTime}>
-                    Ориентировочное время: {estimatedTime}
+                    Estimated time: {estimatedTime}
                   </p>
                 )}
 
@@ -275,34 +279,34 @@ export default function App() {
           </section>
 
           {/* Features */}
-          <section style={styles.features} aria-label="Преимущества">
+          <section style={styles.features} aria-label="Features">
             <div style={styles.feature}>
               <span style={styles.featureIcon} aria-hidden="true">🔒</span>
               <span style={styles.featureText}>
-                <strong>100% приватно</strong> — обработка локально в браузере
+                <strong>100% Private</strong> — processed locally in browser
               </span>
             </div>
             <div style={styles.feature}>
               <span style={styles.featureIcon} aria-hidden="true">⚡</span>
               <span style={styles.featureText}>
-                <strong>Быстро</strong> — 100K+ сообщений в секунду
+                <strong>Fast</strong> — 100K+ messages per second
               </span>
             </div>
             <div style={styles.feature}>
               <span style={styles.featureIcon} aria-hidden="true">📦</span>
               <span style={styles.featureText}>
-                Также доступен как CLI: <code>cargo install chatpack</code>
+                Also available as CLI: <code>cargo install chatpack</code>
               </span>
             </div>
           </section>
 
           {/* Help text */}
           <p style={styles.helpText}>
-            Проблемы? Напишите на{' '}
+            Having issues? Let me know on{' '}
             <a href="https://github.com/berektassuly/chatpack/issues" target="_blank" rel="noopener noreferrer" style={styles.helpLink}>
               GitHub
             </a>{' '}
-            или{' '}
+            or{' '}
             <a href="https://t.me/berektassuly" target="_blank" rel="noopener noreferrer" style={styles.helpLink}>
               Telegram
             </a>
@@ -493,7 +497,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '8px',
-    minHeight: '20px',
+    height: '28px',
   },
   controlLabel: {
     fontFamily: 'var(--font-mono)',
