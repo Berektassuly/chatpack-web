@@ -4,17 +4,23 @@ interface ConvertButtonProps {
   onClick: () => void
   disabled?: boolean
   loading?: boolean
+  progress?: number  // 0-100, optional progress indicator
 }
 
 export const ConvertButton = memo(function ConvertButton({
   onClick,
   disabled = false,
   loading = false,
+  progress,
 }: ConvertButtonProps) {
+  const showProgress = loading && typeof progress === 'number'
+
   return (
     <button
       onClick={onClick}
       disabled={disabled || loading}
+      aria-busy={loading}
+      aria-disabled={disabled || loading}
       style={{
         ...styles.button,
         ...(disabled || loading ? styles.buttonDisabled : {}),
@@ -22,14 +28,37 @@ export const ConvertButton = memo(function ConvertButton({
     >
       {loading ? (
         <>
-          <span style={styles.spinner}>⟳</span>
-          <span>Converting...</span>
+          <span style={styles.spinner} aria-hidden="true">⟳</span>
+          <span>
+            {showProgress 
+              ? `Конвертация... ${Math.round(progress)}%` 
+              : 'Конвертация...'
+            }
+          </span>
         </>
       ) : (
         <>
-          <span>Convert</span>
-          <span style={styles.arrow}>→</span>
+          <span>Конвертировать</span>
+          <span style={styles.arrow} aria-hidden="true">→</span>
         </>
+      )}
+      
+      {/* Progress bar */}
+      {showProgress && (
+        <div 
+          style={styles.progressBar}
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div 
+            style={{
+              ...styles.progressFill,
+              width: `${progress}%`,
+            }}
+          />
+        </div>
       )}
     </button>
   )
@@ -37,6 +66,7 @@ export const ConvertButton = memo(function ConvertButton({
 
 const styles: Record<string, React.CSSProperties> = {
   button: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -53,9 +83,12 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all var(--transition-fast)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
+    minHeight: '48px',
+    minWidth: '200px',
+    overflow: 'hidden',
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.7,
     cursor: 'not-allowed',
   },
   spinner: {
@@ -64,5 +97,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   arrow: {
     transition: 'transform var(--transition-fast)',
+  },
+  progressBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '3px',
+    background: 'rgba(0, 0, 0, 0.3)',
+  },
+  progressFill: {
+    height: '100%',
+    background: 'var(--bg-primary)',
+    transition: 'width 150ms ease',
   },
 }

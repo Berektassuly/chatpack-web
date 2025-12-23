@@ -1,7 +1,10 @@
 import { memo, useCallback, useState, useRef } from 'react'
 
+// Лимит размера файла: 50MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024
+
 interface DropZoneProps {
-  onFileSelect: (file: File) => void
+  onFileSelect: (file: File | null) => void  // ✅ Исправлена типизация
   file: File | null
   disabled?: boolean
   accept?: string
@@ -14,7 +17,19 @@ export const DropZone = memo(function DropZone({
   accept = '.json,.txt,.csv',
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const [sizeError, setSizeError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const validateAndSelect = useCallback((selectedFile: File) => {
+    setSizeError(null)
+    
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setSizeError(`Файл слишком большой (${formatFileSize(selectedFile.size)}). Максимум: ${formatFileSize(MAX_FILE_SIZE)}`)
+      return
+    }
+    
+    onFileSelect(selectedFile)
+  }, [onFileSelect])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -39,9 +54,9 @@ export const DropZone = memo(function DropZone({
 
     const files = e.dataTransfer.files
     if (files.length > 0) {
-      onFileSelect(files[0])
+      validateAndSelect(files[0])
     }
-  }, [disabled, onFileSelect])
+  }, [disabled, validateAndSelect])
 
   const handleClick = useCallback(() => {
     if (!disabled && inputRef.current) {
@@ -52,27 +67,40 @@ export const DropZone = memo(function DropZone({
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      onFileSelect(files[0])
+      validateAndSelect(files[0])
     }
+  }, [validateAndSelect])
+
+  const handleRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSizeError(null)
+    onFileSelect(null)  // ✅ Теперь корректно передаём null
   }, [onFileSelect])
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }, [handleClick])
 
   return (
     <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={file ? `Выбран файл: ${file.name}` : 'Перетащите файл или нажмите для выбора'}
+      aria-disabled={disabled}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       style={{
         ...styles.container,
         ...(isDragOver ? styles.containerDragOver : {}),
         ...(file ? styles.containerWithFile : {}),
         ...(disabled ? styles.containerDisabled : {}),
+        ...(sizeError ? styles.containerError : {}),
       }}
     >
       <input
@@ -82,37 +110,48 @@ export const DropZone = memo(function DropZone({
         onChange={handleChange}
         style={styles.input}
         disabled={disabled}
+        aria-hidden="true"
       />
 
-      {file ? (
+      {sizeError ? (
+        <div style={styles.errorInfo}>
+          <div style={styles.errorIcon}>⚠️</div>
+          <div style={styles.errorText}>{sizeError}</div>
+          <button
+            onClick={handleRemove}
+            style={styles.retryButton}
+            aria-label="Попробовать другой файл"
+          >
+            Выбрать другой файл
+          </button>
+        </div>
+      ) : file ? (
         <div style={styles.fileInfo}>
-          <div style={styles.fileIcon}>📄</div>
+          <div style={styles.fileIcon} aria-hidden="true">📄</div>
           <div style={styles.fileDetails}>
             <span style={styles.fileName}>{file.name}</span>
             <span style={styles.fileSize}>{formatFileSize(file.size)}</span>
           </div>
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onFileSelect(null as unknown as File)
-            }}
+            onClick={handleRemove}
             style={styles.removeButton}
-            title="Remove file"
+            title="Удалить файл"
+            aria-label="Удалить выбранный файл"
           >
             ✕
           </button>
         </div>
       ) : (
         <div style={styles.placeholder}>
-          <div style={styles.icon}>
+          <div style={styles.icon} aria-hidden="true">
             {isDragOver ? '📥' : '📁'}
           </div>
           <div style={styles.text}>
             <span style={styles.textPrimary}>
-              {isDragOver ? 'Drop file here' : 'Drop file here or click to select'}
+              {isDragOver ? 'Отпустите файл' : 'Перетащите файл или нажмите для выбора'}
             </span>
             <span style={styles.textSecondary}>
-              Supports .json, .txt, .csv
+              .json, .txt, .csv • до {formatFileSize(MAX_FILE_SIZE)}
             </span>
           </div>
         </div>
@@ -120,6 +159,12 @@ export const DropZone = memo(function DropZone({
     </div>
   )
 })
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -134,6 +179,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--bg-secondary)',
     cursor: 'pointer',
     transition: 'all var(--transition-default)',
+    outline: 'none',
   },
   containerDragOver: {
     borderColor: 'var(--accent-green)',
@@ -148,6 +194,10 @@ const styles: Record<string, React.CSSProperties> = {
   containerDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
+  },
+  containerError: {
+    borderColor: 'var(--accent-red)',
+    background: 'rgba(239, 68, 68, 0.1)',
   },
   input: {
     display: 'none',
@@ -211,14 +261,40 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '28px',
-    height: '28px',
+    width: '32px',
+    height: '32px',
     border: '1px solid var(--border-default)',
     borderRadius: 'var(--radius-sm)',
     background: 'var(--bg-secondary)',
     color: 'var(--text-muted)',
     cursor: 'pointer',
-    fontSize: '12px',
+    fontSize: '14px',
     transition: 'all var(--transition-fast)',
+    minWidth: '32px',  // Для мобильных устройств
+  },
+  errorInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '12px',
+    textAlign: 'center',
+  },
+  errorIcon: {
+    fontSize: '32px',
+  },
+  errorText: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '13px',
+    color: 'var(--accent-red)',
+  },
+  retryButton: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '12px',
+    padding: '8px 16px',
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-md)',
+    background: 'var(--bg-secondary)',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
   },
 }

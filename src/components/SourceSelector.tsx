@@ -21,39 +21,84 @@ export const SourceSelector = memo(function SourceSelector({
   disabled = false 
 }: SourceSelectorProps) {
   return (
-    <div style={styles.container}>
-      <span style={styles.label}>Source</span>
-      <div style={styles.buttons}>
-        {sources.map((source) => (
-          <button
-            key={source.id}
-            onClick={() => onChange(source.id)}
-            disabled={disabled}
-            title={source.label}
-            style={{
-              ...styles.button,
-              ...(value === source.id ? {
-                ...styles.buttonActive,
-                borderColor: source.color,
-                color: source.color,
-                boxShadow: `0 0 12px ${source.color}33`,
-              } : {}),
-              ...(disabled ? styles.buttonDisabled : {}),
-            }}
-          >
-            {source.shortLabel}
-          </button>
-        ))}
+    <div style={styles.container} role="radiogroup" aria-label="Выберите источник">
+      <span style={styles.label} id="source-label">Источник</span>
+      <div style={styles.buttons} aria-labelledby="source-label">
+        {sources.map((source) => {
+          const isActive = value === source.id
+          return (
+            <button
+              key={source.id}
+              onClick={() => onChange(source.id)}
+              disabled={disabled}
+              role="radio"
+              aria-checked={isActive}
+              aria-label={source.label}
+              style={{
+                ...styles.button,
+                ...(isActive ? {
+                  ...styles.buttonActive,
+                  borderColor: source.color,
+                  color: source.color,
+                  boxShadow: `0 0 12px ${source.color}33`,
+                } : {}),
+                ...(disabled ? styles.buttonDisabled : {}),
+              }}
+            >
+              <span style={styles.shortLabel}>{source.shortLabel}</span>
+              <span style={styles.fullLabel}>{source.label}</span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
 })
+
+// Улучшенное автоопределение источника
+export function detectSource(filename: string): Source | null {
+  const name = filename.toLowerCase()
+  
+  // Telegram: result.json или файл с 'telegram' в названии
+  if (name === 'result.json' || name.includes('telegram')) {
+    return 'telegram'
+  }
+  
+  // WhatsApp: _chat.txt, WhatsApp Chat - *.txt, или файл с 'whatsapp' в названии
+  if (
+    name.includes('whatsapp') || 
+    name.endsWith('_chat.txt') ||
+    name.startsWith('whatsapp chat')
+  ) {
+    return 'whatsapp'
+  }
+  
+  // Instagram: message_1.json или файл с 'instagram' в названии
+  // НЕ используем просто 'message' — слишком общее
+  if (
+    name.includes('instagram') ||
+    /message_\d+\.json$/.test(name)
+  ) {
+    return 'instagram'
+  }
+  
+  // Discord: messages.json (в папке с ID канала) или файл с 'discord' в названии
+  if (
+    name.includes('discord') ||
+    (name === 'messages.json' && !name.includes('instagram'))
+  ) {
+    return 'discord'
+  }
+  
+  return null
+}
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
+    flexWrap: 'wrap',
   },
   label: {
     fontFamily: 'var(--font-mono)',
@@ -65,18 +110,21 @@ const styles: Record<string, React.CSSProperties> = {
   buttons: {
     display: 'flex',
     gap: '6px',
+    flexWrap: 'wrap',
   },
   button: {
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
     fontWeight: 600,
-    padding: '8px 14px',
+    padding: '10px 16px',  // Увеличено для мобильных
     border: '1px solid var(--border-default)',
     borderRadius: 'var(--radius-md)',
     background: 'var(--bg-secondary)',
     color: 'var(--text-secondary)',
     cursor: 'pointer',
     transition: 'all var(--transition-fast)',
+    minWidth: '44px',  // Минимум для тапа на мобильных (Apple HIG)
+    minHeight: '44px',
   },
   buttonActive: {
     background: 'var(--bg-tertiary)',
@@ -84,5 +132,11 @@ const styles: Record<string, React.CSSProperties> = {
   buttonDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
+  },
+  shortLabel: {
+    display: 'inline',
+  },
+  fullLabel: {
+    display: 'none',  // Показываем на широких экранах через CSS
   },
 }

@@ -1,9 +1,12 @@
 import { useState, useCallback } from 'react'
-import { useWasm } from './hooks/useWasm'
+import { useWasm, needsProgressIndicator, estimateProcessingTime } from './hooks/useWasm'
 import { DropZone } from './components/DropZone'
-import { SourceSelector, Source } from './components/SourceSelector'
-import { FormatSelector, Format } from './components/FormatSelector'
+import { SourceDropdown, Source, detectSource } from './components/SourceDropdown'
+import { FormatDropdown, Format } from './components/FormatDropdown'
+import { FlagsSelector, Flags } from './components/FlagsSelector'
 import { ConvertButton } from './components/ConvertButton'
+import { ResultPreview } from './components/ResultPreview'
+import { ExportGuideButton } from './components/ExportGuide'
 
 type ConversionStatus = 'idle' | 'converting' | 'success' | 'error'
 
@@ -16,32 +19,37 @@ interface ConversionResult {
 }
 
 export default function App() {
-  const { isLoading: wasmLoading, isReady: wasmReady, error: wasmError, convert } = useWasm()
+  const { 
+    isLoading: wasmLoading, 
+    isReady: wasmReady, 
+    error: wasmError, 
+    convert,
+    retry: retryWasm,
+    retryCount,
+  } = useWasm()
   
   const [file, setFile] = useState<File | null>(null)
   const [source, setSource] = useState<Source>('telegram')
   const [format, setFormat] = useState<Format>('csv')
+  const [flags, setFlags] = useState<Flags>({ timestamps: false, replays: false })
   const [status, setStatus] = useState<ConversionStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ConversionResult | null>(null)
+  const [progress, setProgress] = useState<number | undefined>(undefined)
 
+  // Обработка выбора файла с улучшенным автоопределением
   const handleFileSelect = useCallback((selectedFile: File | null) => {
     setFile(selectedFile)
     setStatus('idle')
     setError(null)
     setResult(null)
+    setProgress(undefined)
 
-    // Auto-detect source from filename
     if (selectedFile) {
-      const name = selectedFile.name.toLowerCase()
-      if (name.includes('telegram') || name.includes('result.json')) {
-        setSource('telegram')
-      } else if (name.includes('whatsapp') || name.endsWith('.txt')) {
-        setSource('whatsapp')
-      } else if (name.includes('instagram') || name.includes('message')) {
-        setSource('instagram')
-      } else if (name.includes('discord')) {
-        setSource('discord')
+      // Улучшенное автоопределение источника
+      const detectedSource = detectSource(selectedFile.name)
+      if (detectedSource) {
+        setSource(detectedSource)
       }
     }
   }, [])
@@ -51,28 +59,57 @@ export default function App() {
 
     setStatus('converting')
     setError(null)
+    setProgress(undefined)
+
+    // Симуляция прогресса для больших файлов
+    const showProgress = needsProgressIndicator(file.size)
+    let progressInterval: ReturnType<typeof setInterval> | null = null
+    
+    if (showProgress) {
+      setProgress(0)
+      let currentProgress = 0
+      progressInterval = setInterval(() => {
+        // Логарифмический прогресс — быстро до 80%, потом медленнее
+        currentProgress = Math.min(95, currentProgress + (95 - currentProgress) * 0.1)
+        setProgress(currentProgress)
+      }, 100)
+    }
 
     try {
       const content = await file.text()
       const output = await convert(content, source, format)
       
+      // Завершаем прогресс
+      if (progressInterval) {
+        clearInterval(progressInterval)
+        setProgress(100)
+      }
+
       const extension = format === 'jsonl' ? 'jsonl' : format
       const baseName = file.name.replace(/\.[^/.]+$/, '')
-      const filename = `${baseName}_optimized.${extension}`
+      const filename = `${baseName}_chatpack.${extension}`
 
-      // Count lines for stats
+      // Подсчёт сообщений
       const lineCount = output.split('\n').filter(line => line.trim()).length
+      const messageCount = format === 'csv' ? lineCount - 1 : lineCount  // CSV имеет заголовок
 
       setResult({
         content: output,
         filename,
         originalSize: file.size,
         outputSize: new Blob([output]).size,
-        messageCount: lineCount - 1, // minus header for CSV
+        messageCount: Math.max(0, messageCount),
       })
       setStatus('success')
+      
+      // Сбрасываем прогресс после успеха
+      setTimeout(() => setProgress(undefined), 500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Conversion failed')
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+      setProgress(undefined)
+      setError(err instanceof Error ? err.message : 'Ошибка конвертации')
       setStatus('error')
     }
   }, [file, wasmReady, convert, source, format])
@@ -91,33 +128,36 @@ export default function App() {
     URL.revokeObjectURL(url)
   }, [result])
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-  }
-
-  const compressionRatio = result 
-    ? ((1 - result.outputSize / result.originalSize) * 100).toFixed(1)
+  // Показываем оценку времени для больших файлов
+  const estimatedTime = file && needsProgressIndicator(file.size) 
+    ? estimateProcessingTime(file.size) 
     : null
 
   return (
     <div style={styles.app}>
+      {/* Skip link for accessibility */}
+      <a href="#main-content" style={styles.skipLink}>
+        Перейти к основному содержимому
+      </a>
+
       {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerContent}>
-          <a href="/" style={styles.logo}>
-            <span style={styles.logoIcon}>📦</span>
+          <a href="/" style={styles.logo} aria-label="chatpack — на главную">
+            <span style={styles.logoIcon} aria-hidden="true">📦</span>
             <span style={styles.logoText}>chatpack</span>
           </a>
-          <nav style={styles.nav}>
+          <nav style={styles.nav} aria-label="Основная навигация">
             <a href="https://github.com/berektassuly/chatpack" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
               GitHub
             </a>
-            <a href="https://berektassuly.com/blog" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
-              Blog
+            <a href="https://crates.io/crates/chatpack" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
+              Crates.io
             </a>
-            <a href="https://linkedin.com/in/berektassuly" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
+            <a href="https://berektassuly.com/" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
+              Блог
+            </a>
+            <a href="https://www.linkedin.com/in/mukhammedali-berektassuly/" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
               LinkedIn
             </a>
           </nav>
@@ -125,32 +165,35 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main style={styles.main}>
+      <main id="main-content" style={styles.main}>
         <div style={styles.container}>
           {/* Hero */}
           <section style={styles.hero}>
             <h1 style={styles.title}>
-              Prepare chat data for <span style={styles.titleAccent}>RAG / LLM</span>
+              Подготовьте чаты для <span style={styles.titleAccent}>RAG / LLM</span>
             </h1>
             <p style={styles.subtitle}>
-              Compress Telegram, WhatsApp, Instagram, Discord exports <strong>13x</strong>.
+              Сжатие экспортов Telegram, WhatsApp, Instagram, Discord в <strong>13 раз</strong>.
               <br />
-              Works in browser — files never leave your device.
+              <span style={styles.privacyNote}>🔒 Работает в браузере — файлы не покидают ваше устройство.</span>
             </p>
           </section>
 
           {/* Converter Card */}
-          <section style={styles.card}>
+          <section style={styles.card} aria-label="Конвертер">
             {wasmLoading && (
-              <div style={styles.wasmLoading}>
-                <span style={styles.spinner}>⟳</span>
-                <span>Loading converter...</span>
+              <div style={styles.wasmLoading} role="status" aria-live="polite">
+                <span style={styles.spinner} aria-hidden="true">⟳</span>
+                <span>Загрузка конвертера...</span>
               </div>
             )}
 
             {wasmError && (
-              <div style={styles.wasmError}>
-                <span>⚠️ Failed to load converter: {wasmError}</span>
+              <div style={styles.wasmError} role="alert">
+                <span>⚠️ {wasmError}</span>
+                <button onClick={retryWasm} style={styles.retryButton}>
+                  Попробовать снова {retryCount > 0 && `(${retryCount})`}
+                </button>
               </div>
             )}
 
@@ -162,17 +205,37 @@ export default function App() {
                   disabled={status === 'converting'}
                 />
 
-                <div style={styles.controls}>
-                  <SourceSelector
-                    value={source}
-                    onChange={setSource}
-                    disabled={status === 'converting'}
-                  />
-                  <FormatSelector
-                    value={format}
-                    onChange={setFormat}
-                    disabled={status === 'converting'}
-                  />
+                {/* Controls Row - выровненные в ряд */}
+                <div style={styles.controlsRow}>
+                  <div style={styles.controlGroup}>
+                    <div style={styles.controlHeader}>
+                      <span style={styles.controlLabel}>SOURCE</span>
+                      <ExportGuideButton source={source} />
+                    </div>
+                    <SourceDropdown
+                      value={source}
+                      onChange={setSource}
+                      disabled={status === 'converting'}
+                    />
+                  </div>
+                  
+                  <div style={styles.controlGroup}>
+                    <span style={styles.controlLabel}>OUTPUT FORMAT</span>
+                    <FormatDropdown
+                      value={format}
+                      onChange={setFormat}
+                      disabled={status === 'converting'}
+                    />
+                  </div>
+                  
+                  <div style={styles.controlGroup}>
+                    <span style={styles.controlLabel}>FLAGS</span>
+                    <FlagsSelector
+                      value={flags}
+                      onChange={setFlags}
+                      disabled={status === 'converting'}
+                    />
+                  </div>
                 </div>
 
                 <div style={styles.actions}>
@@ -180,80 +243,66 @@ export default function App() {
                     onClick={handleConvert}
                     disabled={!file || status === 'converting'}
                     loading={status === 'converting'}
+                    progress={progress}
                   />
                 </div>
 
+                {/* Оценка времени для больших файлов */}
+                {file && estimatedTime && status !== 'success' && (
+                  <p style={styles.estimatedTime}>
+                    Ориентировочное время: {estimatedTime}
+                  </p>
+                )}
+
                 {error && (
-                  <div style={styles.error}>
+                  <div style={styles.error} role="alert">
                     <span>❌ {error}</span>
                   </div>
                 )}
 
                 {status === 'success' && result && (
-                  <div style={styles.result}>
-                    <div style={styles.resultHeader}>
-                      <span style={styles.resultIcon}>✅</span>
-                      <span style={styles.resultTitle}>Conversion complete</span>
-                    </div>
-                    
-                    <div style={styles.resultStats}>
-                      <div style={styles.stat}>
-                        <span style={styles.statLabel}>Output</span>
-                        <span style={styles.statValue}>{formatBytes(result.outputSize)}</span>
-                      </div>
-                      <div style={styles.stat}>
-                        <span style={styles.statLabel}>Compression</span>
-                        <span style={{ ...styles.statValue, color: 'var(--accent-green)' }}>
-                          {compressionRatio}%
-                        </span>
-                      </div>
-                      {result.messageCount && (
-                        <div style={styles.stat}>
-                          <span style={styles.statLabel}>Messages</span>
-                          <span style={styles.statValue}>{result.messageCount.toLocaleString()}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <button onClick={handleDownload} style={styles.downloadButton}>
-                      <span>⬇</span>
-                      <span>Download {result.filename}</span>
-                    </button>
-                  </div>
+                  <ResultPreview
+                    content={result.content}
+                    filename={result.filename}
+                    originalSize={result.originalSize}
+                    outputSize={result.outputSize}
+                    messageCount={result.messageCount}
+                    onDownload={handleDownload}
+                  />
                 )}
               </>
             )}
           </section>
 
           {/* Features */}
-          <section style={styles.features}>
+          <section style={styles.features} aria-label="Преимущества">
             <div style={styles.feature}>
-              <span style={styles.featureIcon}>🔒</span>
+              <span style={styles.featureIcon} aria-hidden="true">🔒</span>
               <span style={styles.featureText}>
-                <strong>100% Private</strong> — processed locally in browser
+                <strong>100% приватно</strong> — обработка локально в браузере
               </span>
             </div>
             <div style={styles.feature}>
-              <span style={styles.featureIcon}>⚡</span>
+              <span style={styles.featureIcon} aria-hidden="true">⚡</span>
               <span style={styles.featureText}>
-                <strong>Fast</strong> — 100K+ messages per second
+                <strong>Быстро</strong> — 100K+ сообщений в секунду
               </span>
             </div>
             <div style={styles.feature}>
-              <span style={styles.featureIcon}>💻</span>
+              <span style={styles.featureIcon} aria-hidden="true">📦</span>
               <span style={styles.featureText}>
-                Also available as CLI: <code>cargo install chatpack</code>
+                Также доступен как CLI: <code>cargo install chatpack</code>
               </span>
             </div>
           </section>
 
           {/* Help text */}
           <p style={styles.helpText}>
-            Having issues? Let me know on{' '}
+            Проблемы? Напишите на{' '}
             <a href="https://github.com/berektassuly/chatpack/issues" target="_blank" rel="noopener noreferrer" style={styles.helpLink}>
               GitHub
             </a>{' '}
-            or{' '}
+            или{' '}
             <a href="https://t.me/berektassuly" target="_blank" rel="noopener noreferrer" style={styles.helpLink}>
               Telegram
             </a>
@@ -268,14 +317,11 @@ export default function App() {
             © 2025 Mukhammedali Berektassuly
           </span>
           <div style={styles.footerLinks}>
-            <a href="https://linkedin.com/in/berektassuly" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
+            <a href="https://www.linkedin.com/in/mukhammedali-berektassuly/" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
               LinkedIn
             </a>
             <a href="https://github.com/berektassuly" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
               GitHub
-            </a>
-            <a href="https://berektassuly.com/blog" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
-              Blog
             </a>
           </div>
         </div>
@@ -290,6 +336,14 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
   },
+  skipLink: {
+    position: 'absolute',
+    left: '-9999px',
+    top: 'auto',
+    width: '1px',
+    height: '1px',
+    overflow: 'hidden',
+  },
 
   // Header
   header: {
@@ -297,12 +351,14 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--bg-secondary)',
   },
   headerContent: {
-    maxWidth: '800px',
+    maxWidth: '900px',
     margin: '0 auto',
     padding: '16px 24px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
   },
   logo: {
     display: 'flex',
@@ -321,23 +377,25 @@ const styles: Record<string, React.CSSProperties> = {
   },
   nav: {
     display: 'flex',
-    gap: '24px',
+    gap: '8px',
   },
   navLink: {
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
     color: 'var(--text-secondary)',
     textDecoration: 'none',
-    transition: 'color var(--transition-fast)',
+    padding: '8px 12px',
+    borderRadius: 'var(--radius-sm)',
+    transition: 'color var(--transition-fast), background var(--transition-fast)',
   },
 
   // Main
   main: {
     flex: 1,
-    padding: '48px 24px',
+    padding: '48px 16px',
   },
   container: {
-    maxWidth: '600px',
+    maxWidth: '900px',
     margin: '0 auto',
   },
 
@@ -348,7 +406,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     fontFamily: 'var(--font-mono)',
-    fontSize: '28px',
+    fontSize: 'clamp(22px, 5vw, 28px)',
     fontWeight: 700,
     color: 'var(--text-primary)',
     marginBottom: '12px',
@@ -361,6 +419,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '15px',
     color: 'var(--text-secondary)',
     lineHeight: 1.6,
+  },
+  privacyNote: {
+    fontSize: '13px',
+    color: 'var(--text-muted)',
   },
 
   // Card
@@ -383,32 +445,75 @@ const styles: Record<string, React.CSSProperties> = {
   },
   wasmError: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '20px',
+    gap: '16px',
+    padding: '24px',
     color: 'var(--accent-red)',
     fontFamily: 'var(--font-mono)',
     fontSize: '14px',
     background: 'rgba(239, 68, 68, 0.1)',
     borderRadius: 'var(--radius-md)',
+    textAlign: 'center',
+  },
+  retryButton: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '13px',
+    padding: '10px 20px',
+    border: '1px solid var(--accent-red)',
+    borderRadius: 'var(--radius-md)',
+    background: 'transparent',
+    color: 'var(--accent-red)',
+    cursor: 'pointer',
+    transition: 'all var(--transition-fast)',
   },
   spinner: {
     display: 'inline-block',
     animation: 'spin 1s linear infinite',
   },
-  controls: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '16px',
-    justifyContent: 'center',
-    marginTop: '20px',
-    paddingTop: '20px',
+  
+  // Controls Row - ровный грид
+  controlsRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '24px',
+    marginTop: '24px',
+    paddingTop: '24px',
     borderTop: '1px solid var(--border-subtle)',
+    alignItems: 'start',
+  },
+  controlGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  controlHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+    minHeight: '20px',
+  },
+  controlLabel: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '11px',
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    fontWeight: 500,
   },
   actions: {
     display: 'flex',
     justifyContent: 'center',
     marginTop: '24px',
+  },
+  estimatedTime: {
+    textAlign: 'center',
+    marginTop: '12px',
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    fontFamily: 'var(--font-mono)',
   },
   error: {
     marginTop: '16px',
@@ -419,65 +524,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-red)',
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
-  },
-  result: {
-    marginTop: '20px',
-    paddingTop: '20px',
-    borderTop: '1px solid var(--border-subtle)',
-  },
-  resultHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginBottom: '16px',
-  },
-  resultIcon: {
-    fontSize: '20px',
-  },
-  resultTitle: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '14px',
-    fontWeight: 600,
-    color: 'var(--accent-green)',
-  },
-  resultStats: {
-    display: 'flex',
-    gap: '24px',
-    marginBottom: '16px',
-  },
-  stat: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  statLabel: {
-    fontSize: '11px',
-    color: 'var(--text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  statValue: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '16px',
-    fontWeight: 600,
-    color: 'var(--text-primary)',
-  },
-  downloadButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    width: '100%',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '13px',
-    fontWeight: 600,
-    padding: '12px 20px',
-    border: '1px solid var(--accent-green)',
-    borderRadius: 'var(--radius-md)',
-    background: 'var(--accent-green-glow)',
-    color: 'var(--accent-green)',
-    cursor: 'pointer',
-    transition: 'all var(--transition-fast)',
   },
 
   // Features
@@ -498,6 +544,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   featureIcon: {
     fontSize: '18px',
+    flexShrink: 0,
   },
   featureText: {
     fontSize: '14px',
@@ -522,7 +569,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--bg-secondary)',
   },
   footerContent: {
-    maxWidth: '800px',
+    maxWidth: '900px',
     margin: '0 auto',
     padding: '20px 24px',
     display: 'flex',
