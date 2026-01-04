@@ -138,7 +138,7 @@ fn to_json(messages: &[OutputMessage]) -> std::result::Result<String, String> {
 /// Convert to JSONL format
 fn to_jsonl(messages: &[OutputMessage]) -> std::result::Result<String, String> {
     let lines: std::result::Result<Vec<String>, _> =
-        messages.iter().map(|m| serde_json::to_string(m)).collect();
+        messages.iter().map(serde_json::to_string).collect();
 
     lines.map(|l| l.join("\n")).map_err(|e| e.to_string())
 }
