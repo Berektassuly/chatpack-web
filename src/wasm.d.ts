@@ -5,7 +5,7 @@ declare module '../wasm/chatpack_wasm.js' {
     source: string,
     format: string,
     includeTimestamps: boolean,
-    includeReplies: boolean
+    includeReplies: boolean,
   ): string
   export function version(): string
 }

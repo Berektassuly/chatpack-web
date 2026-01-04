@@ -1,6 +1,6 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
 
-export type Source = 'telegram' | 'whatsapp' | 'instagram' | 'discord'
+import { Source } from './sourceTypes'
 
 interface SourceDropdownProps {
   value: Source
@@ -33,12 +33,15 @@ export const SourceDropdown = memo(function SourceDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSelect = useCallback((source: Source) => {
-    onChange(source)
-    setIsOpen(false)
-  }, [onChange])
+  const handleSelect = useCallback(
+    (source: Source) => {
+      onChange(source)
+      setIsOpen(false)
+    },
+    [onChange],
+  )
 
-  const selectedSource = sources.find(s => s.id === value)!
+  const selectedSource = sources.find((s) => s.id === value)!
 
   return (
     <div style={styles.container} ref={containerRef}>
@@ -91,29 +94,6 @@ export const SourceDropdown = memo(function SourceDropdown({
     </div>
   )
 })
-
-// Улучшенное автоопределение источника
-export function detectSource(filename: string): Source | null {
-  const name = filename.toLowerCase()
-  
-  if (name === 'result.json' || name.includes('telegram')) {
-    return 'telegram'
-  }
-  
-  if (name.includes('whatsapp') || name.endsWith('_chat.txt') || name.startsWith('whatsapp chat')) {
-    return 'whatsapp'
-  }
-  
-  if (name.includes('instagram') || /message_\d+\.json$/.test(name)) {
-    return 'instagram'
-  }
-  
-  if (name.includes('discord') || (name === 'messages.json' && !name.includes('instagram'))) {
-    return 'discord'
-  }
-  
-  return null
-}
 
 const styles: Record<string, React.CSSProperties> = {
   container: {

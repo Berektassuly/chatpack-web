@@ -30,12 +30,10 @@ export const ResultPreview = memo(function ResultPreview({
   const previewLines = content
     .split('\n')
     .slice(0, MAX_PREVIEW_LINES)
-    .map(line => 
-      line.length > MAX_LINE_LENGTH 
-        ? line.substring(0, MAX_LINE_LENGTH) + '...' 
-        : line
+    .map((line) =>
+      line.length > MAX_LINE_LENGTH ? line.substring(0, MAX_LINE_LENGTH) + '...' : line,
     )
-  
+
   const totalLines = content.split('\n').length
   const hasMoreLines = totalLines > MAX_PREVIEW_LINES
 
@@ -59,10 +57,12 @@ export const ResultPreview = memo(function ResultPreview({
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.icon} aria-hidden="true">✅</span>
+        <span style={styles.icon} aria-hidden="true">
+          ✅
+        </span>
         <span style={styles.title}>Конвертация завершена</span>
       </div>
-      
+
       {/* Stats */}
       <div style={styles.stats}>
         <div style={styles.stat}>
@@ -105,9 +105,7 @@ export const ResultPreview = memo(function ResultPreview({
               </div>
             ))}
             {hasMoreLines && (
-              <div style={styles.previewMore}>
-                ... ещё {totalLines - MAX_PREVIEW_LINES} строк
-              </div>
+              <div style={styles.previewMore}>... ещё {totalLines - MAX_PREVIEW_LINES} строк</div>
             )}
           </pre>
           <button
@@ -121,8 +119,8 @@ export const ResultPreview = memo(function ResultPreview({
       )}
 
       {/* Download button */}
-      <button 
-        onClick={handleDownload} 
+      <button
+        onClick={handleDownload}
         style={{
           ...styles.downloadButton,
           ...(downloaded ? styles.downloadButtonSuccess : {}),
@@ -130,20 +128,11 @@ export const ResultPreview = memo(function ResultPreview({
         aria-live="polite"
       >
         <span aria-hidden="true">{downloaded ? '✓' : '⬇'}</span>
-        <span>
-          {downloaded 
-            ? 'Скачивание началось!' 
-            : `Скачать ${filename}`
-          }
-        </span>
+        <span>{downloaded ? 'Скачивание началось!' : `Скачать ${filename}`}</span>
       </button>
 
       {/* Download hint */}
-      {downloaded && (
-        <p style={styles.downloadHint}>
-          Файл сохранён в папку загрузок
-        </p>
-      )}
+      {downloaded && <p style={styles.downloadHint}>Файл сохранён в папку загрузок</p>}
     </div>
   )
 })

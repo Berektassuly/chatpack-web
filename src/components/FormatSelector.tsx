@@ -41,8 +41,8 @@ export const FormatSelector = memo(function FormatSelector({
   // Фокус на первом элементе при открытии
   useEffect(() => {
     if (isOpen) {
-      const currentIndex = formats.findIndex(f => f.id === value)
-      setFocusedIndex(currentIndex >= 0 ? currentIndex : 0)
+      const currentIndex = formats.findIndex((f) => f.id === value)
+      setTimeout(() => setFocusedIndex(currentIndex >= 0 ? currentIndex : 0), 0)
     }
   }, [isOpen, value])
 
@@ -69,45 +69,53 @@ export const FormatSelector = memo(function FormatSelector({
     }
   }, [])
 
-  const handleOptionKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        setFocusedIndex((prev) => (prev + 1) % formats.length)
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        setFocusedIndex((prev) => (prev - 1 + formats.length) % formats.length)
-        break
-      case 'Enter':
-      case ' ':
-        e.preventDefault()
-        onChange(formats[index].id)
-        setIsOpen(false)
-        triggerRef.current?.focus()
-        break
-      case 'Escape':
-        e.preventDefault()
-        setIsOpen(false)
-        triggerRef.current?.focus()
-        break
-      case 'Tab':
-        setIsOpen(false)
-        break
-    }
-  }, [onChange])
+  const handleOptionKeyDown = useCallback(
+    (e: React.KeyboardEvent, index: number) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setFocusedIndex((prev) => (prev + 1) % formats.length)
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setFocusedIndex((prev) => (prev - 1 + formats.length) % formats.length)
+          break
+        case 'Enter':
+        case ' ':
+          e.preventDefault()
+          onChange(formats[index].id)
+          setIsOpen(false)
+          triggerRef.current?.focus()
+          break
+        case 'Escape':
+          e.preventDefault()
+          setIsOpen(false)
+          triggerRef.current?.focus()
+          break
+        case 'Tab':
+          setIsOpen(false)
+          break
+      }
+    },
+    [onChange],
+  )
 
-  const handleSelect = useCallback((format: Format) => {
-    onChange(format)
-    setIsOpen(false)
-    triggerRef.current?.focus()
-  }, [onChange])
+  const handleSelect = useCallback(
+    (format: Format) => {
+      onChange(format)
+      setIsOpen(false)
+      triggerRef.current?.focus()
+    },
+    [onChange],
+  )
 
   const selectedFormat = formats.find((f) => f.id === value)!
 
   return (
     <div style={styles.container} ref={containerRef}>
-      <span style={styles.label} id="format-label">Формат</span>
+      <span style={styles.label} id="format-label">
+        Формат
+      </span>
       <div style={styles.dropdownContainer}>
         <button
           ref={triggerRef}
@@ -146,7 +154,7 @@ export const FormatSelector = memo(function FormatSelector({
         </button>
 
         {isOpen && (
-          <div 
+          <div
             style={styles.dropdown}
             role="listbox"
             aria-labelledby="format-label"
@@ -155,7 +163,9 @@ export const FormatSelector = memo(function FormatSelector({
             {formats.map((format, index) => (
               <button
                 key={format.id}
-                ref={(el) => { optionsRef.current[index] = el }}
+                ref={(el) => {
+                  optionsRef.current[index] = el
+                }}
                 id={`format-option-${format.id}`}
                 onClick={() => handleSelect(format.id)}
                 onKeyDown={(e) => handleOptionKeyDown(e, index)}
@@ -171,7 +181,9 @@ export const FormatSelector = memo(function FormatSelector({
                 <span style={styles.optionLabel}>{format.label}</span>
                 <span style={styles.optionDescription}>{format.description}</span>
                 {value === format.id && (
-                  <span style={styles.checkmark} aria-hidden="true">✓</span>
+                  <span style={styles.checkmark} aria-hidden="true">
+                    ✓
+                  </span>
                 )}
               </button>
             ))}
@@ -205,7 +217,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
     fontWeight: 600,
-    padding: '10px 14px',  // Увеличено для мобильных
+    padding: '10px 14px', // Увеличено для мобильных
     border: '1px solid var(--border-default)',
     borderRadius: 'var(--radius-md)',
     background: 'var(--bg-secondary)',
@@ -213,7 +225,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'all var(--transition-fast)',
     minWidth: '90px',
-    minHeight: '44px',  // Минимум для тапа
+    minHeight: '44px', // Минимум для тапа
   },
   triggerOpen: {
     borderColor: 'var(--accent-green)',
@@ -249,7 +261,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '2px',
     width: '100%',
-    padding: '12px 14px',  // Увеличено
+    padding: '12px 14px', // Увеличено
     border: 'none',
     background: 'transparent',
     cursor: 'pointer',
@@ -275,7 +287,7 @@ const styles: Record<string, React.CSSProperties> = {
   optionDescription: {
     fontSize: '11px',
     color: 'var(--text-muted)',
-    paddingRight: '20px',  // Место для галочки
+    paddingRight: '20px', // Место для галочки
   },
   checkmark: {
     position: 'absolute',

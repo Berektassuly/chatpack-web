@@ -7,6 +7,7 @@
 ## The Problem
 
 You want to ask Claude/ChatGPT about your conversations, but:
+
 - Raw exports are **80% metadata noise**
 - JSON structure wastes tokens on brackets and keys
 - Context windows are expensive
@@ -14,6 +15,7 @@ You want to ask Claude/ChatGPT about your conversations, but:
 ## The Solution
 
 chatpack-web compresses your chat exports **13x** — entirely in your browser.
+
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
 │ Telegram JSON   │     │              │     │ Clean CSV       │
@@ -34,31 +36,36 @@ chatpack-web compresses your chat exports **13x** — entirely in your browser.
 
 ## Real Compression Numbers
 
-| Format | Input (Telegram JSON) | Output | Savings |
-|--------|----------------------|--------|---------|
-| **CSV** | 11.2M tokens | 850K tokens | **92% (13x)** 🔥 |
-| JSONL | 11.2M tokens | 1.0M tokens | 91% (11x) |
-| JSON | 11.2M tokens | 1.3M tokens | 88% (8x) |
+| Format  | Input (Telegram JSON) | Output      | Savings          |
+| ------- | --------------------- | ----------- | ---------------- |
+| **CSV** | 11.2M tokens          | 850K tokens | **92% (13x)** 🔥 |
+| JSONL   | 11.2M tokens          | 1.0M tokens | 91% (11x)        |
+| JSON    | 11.2M tokens          | 1.3M tokens | 88% (8x)         |
 
 ## How to Export Your Chats
 
 ### Telegram
+
 1. Open **Telegram Desktop** → Settings → Advanced → Export Telegram data
 2. Select JSON format, uncheck media
 3. Upload `result.json`
 
 ### WhatsApp
+
 1. Open chat → ⋮ menu → More → Export chat
 2. Choose "Without Media"
 3. Upload the `.txt` file
 
 ### Instagram
+
 1. Settings → Your activity → Download your information
 2. Select JSON format, Messages only
 3. Find `messages/inbox/*/message_1.json`
 
 ### Discord
+
 Use [DiscordChatExporter](https://github.com/Tyrrrz/DiscordChatExporter):
+
 1. Export chat as JSON, TXT, or CSV
 2. Upload the exported file
 
@@ -70,6 +77,7 @@ Use [DiscordChatExporter](https://github.com/Tyrrrz/DiscordChatExporter):
 - Rust + wasm-pack
 
 ### Setup
+
 ```bash
 # Install wasm-pack
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -86,11 +94,13 @@ pnpm run dev
 ```
 
 ### Build for Production
+
 ```bash
 pnpm run build
 ```
 
 ### Project Structure
+
 ```
 chatpack-web/
 ├── src/
@@ -120,6 +130,7 @@ chatpack-web/
 ### WASM API
 
 The WASM module exposes two functions:
+
 ```typescript
 // Convert chat export to specified format
 convert(

@@ -16,13 +16,16 @@ export const DropZone = memo(function DropZone({
   const [isDragOver, setIsDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!disabled) {
-      setIsDragOver(true)
-    }
-  }, [disabled])
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!disabled) {
+        setIsDragOver(true)
+      }
+    },
+    [disabled],
+  )
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -30,18 +33,21 @@ export const DropZone = memo(function DropZone({
     setIsDragOver(false)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(false)
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragOver(false)
 
-    if (disabled) return
+      if (disabled) return
 
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      onFileSelect(files[0])
-    }
-  }, [disabled, onFileSelect])
+      const files = e.dataTransfer.files
+      if (files.length > 0) {
+        onFileSelect(files[0])
+      }
+    },
+    [disabled, onFileSelect],
+  )
 
   const handleClick = useCallback(() => {
     if (!disabled && inputRef.current) {
@@ -49,24 +55,33 @@ export const DropZone = memo(function DropZone({
     }
   }, [disabled])
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      onFileSelect(files[0])
-    }
-  }, [onFileSelect])
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files
+      if (files && files.length > 0) {
+        onFileSelect(files[0])
+      }
+    },
+    [onFileSelect],
+  )
 
-  const handleRemove = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    onFileSelect(null)
-  }, [onFileSelect])
+  const handleRemove = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onFileSelect(null)
+    },
+    [onFileSelect],
+  )
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleClick()
-    }
-  }, [handleClick])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        handleClick()
+      }
+    },
+    [handleClick],
+  )
 
   return (
     <div
@@ -98,7 +113,9 @@ export const DropZone = memo(function DropZone({
 
       {file ? (
         <div style={styles.fileInfo}>
-          <div style={styles.fileIcon} aria-hidden="true">📄</div>
+          <div style={styles.fileIcon} aria-hidden="true">
+            📄
+          </div>
           <div style={styles.fileDetails}>
             <span style={styles.fileName}>{file.name}</span>
             <span style={styles.fileSize}>{formatFileSize(file.size)}</span>
@@ -121,9 +138,7 @@ export const DropZone = memo(function DropZone({
             <span style={styles.textPrimary}>
               {isDragOver ? 'Drop file here' : 'Drop file or click to select'}
             </span>
-            <span style={styles.textSecondary}>
-              .json, .txt, .csv
-            </span>
+            <span style={styles.textSecondary}>.json, .txt, .csv</span>
           </div>
         </div>
       )}

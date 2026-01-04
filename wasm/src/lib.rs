@@ -1,10 +1,10 @@
-use wasm_bindgen::prelude::*;
 use serde::Serialize;
+use wasm_bindgen::prelude::*;
 
 // Import specific items, avoid importing Result from chatpack
-use chatpack::Message;
-use chatpack::parser::{Platform, create_parser};
 use chatpack::core::processor::merge_consecutive;
+use chatpack::parser::{create_parser, Platform};
+use chatpack::Message;
 
 /// Output format enum for WASM
 #[derive(Debug, Clone, Copy)]
@@ -54,14 +54,12 @@ pub fn convert(
     include_timestamps: bool,
     include_replies: bool,
 ) -> std::result::Result<String, JsValue> {
-    let platform = parse_platform(source)?;
-    let output_format = parse_format(format)?;
+    let platform = parse_platform(source).map_err(|e| JsValue::from_str(&e))?;
+    let output_format = parse_format(format).map_err(|e| JsValue::from_str(&e))?;
 
     // Parse
     let parser = create_parser(platform);
-    let messages = parser
-        .parse_str(input)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let messages = parser.parse_str(input).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     // Merge consecutive messages from same sender
     let merged = merge_consecutive(messages);
@@ -73,8 +71,9 @@ pub fn convert(
         .collect();
 
     // Format output
-    let output = format_output(&output_messages, output_format, include_timestamps, include_replies)
-        .map_err(|e| JsValue::from_str(&e))?;
+    let output =
+        format_output(&output_messages, output_format, include_timestamps, include_replies)
+            .map_err(|e| JsValue::from_str(&e))?;
 
     Ok(output)
 }
@@ -100,7 +99,7 @@ fn to_csv(
     include_replies: bool,
 ) -> std::result::Result<String, String> {
     let mut wtr = csv::Writer::from_writer(vec![]);
-    
+
     // Build header dynamically based on config
     let mut headers = vec![];
     if include_timestamps {
@@ -111,9 +110,9 @@ fn to_csv(
     if include_replies {
         headers.push("reply_to");
     }
-    
+
     wtr.write_record(&headers).map_err(|e| e.to_string())?;
-    
+
     for msg in messages {
         let mut record = vec![];
         if include_timestamps {
@@ -126,7 +125,7 @@ fn to_csv(
         }
         wtr.write_record(&record).map_err(|e| e.to_string())?;
     }
-    
+
     let data = wtr.into_inner().map_err(|e| e.to_string())?;
     String::from_utf8(data).map_err(|e| e.to_string())
 }
@@ -138,14 +137,10 @@ fn to_json(messages: &[OutputMessage]) -> std::result::Result<String, String> {
 
 /// Convert to JSONL format
 fn to_jsonl(messages: &[OutputMessage]) -> std::result::Result<String, String> {
-    let lines: std::result::Result<Vec<String>, _> = messages
-        .iter()
-        .map(|m| serde_json::to_string(m))
-        .collect();
-    
-    lines
-        .map(|l| l.join("\n"))
-        .map_err(|e| e.to_string())
+    let lines: std::result::Result<Vec<String>, _> =
+        messages.iter().map(|m| serde_json::to_string(m)).collect();
+
+    lines.map(|l| l.join("\n")).map_err(|e| e.to_string())
 }
 
 /// Get library version
@@ -154,27 +149,47 @@ pub fn version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
-fn parse_platform(s: &str) -> std::result::Result<Platform, JsValue> {
+fn parse_platform(s: &str) -> std::result::Result<Platform, String> {
     match s.to_lowercase().as_str() {
         "telegram" | "tg" => Ok(Platform::Telegram),
         "whatsapp" | "wa" => Ok(Platform::WhatsApp),
         "instagram" | "ig" => Ok(Platform::Instagram),
         "discord" | "dc" => Ok(Platform::Discord),
-        _ => Err(JsValue::from_str(&format!(
-            "Unknown source: {}. Expected: telegram, whatsapp, instagram, discord",
-            s
-        ))),
+        _ => {
+            Err(format!("Unknown source: {}. Expected: telegram, whatsapp, instagram, discord", s))
+        }
     }
 }
 
-fn parse_format(s: &str) -> std::result::Result<Format, JsValue> {
+fn parse_format(s: &str) -> std::result::Result<Format, String> {
     match s.to_lowercase().as_str() {
         "csv" => Ok(Format::Csv),
         "json" => Ok(Format::Json),
         "jsonl" => Ok(Format::Jsonl),
-        _ => Err(JsValue::from_str(&format!(
-            "Unknown format: {}. Expected: csv, json, jsonl",
-            s
-        ))),
+        _ => Err(format!("Unknown format: {}. Expected: csv, json, jsonl", s)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_version() {
+        assert!(!version().is_empty());
+    }
+
+    #[test]
+    fn test_parse_platform() {
+        assert!(parse_platform("tg").is_ok());
+        assert!(parse_platform("whatsapp").is_ok());
+        assert!(parse_platform("unknown").is_err());
+    }
+
+    #[test]
+    fn test_parse_format() {
+        assert!(parse_format("csv").is_ok());
+        assert!(parse_format("json").is_ok());
+        assert!(parse_format("invalid").is_err());
     }
 }

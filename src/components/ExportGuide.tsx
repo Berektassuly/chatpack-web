@@ -1,5 +1,5 @@
 import { memo, useState, useCallback } from 'react'
-import { Source } from './SourceDropdown'
+import { Source } from './sourceTypes'
 
 interface ExportGuideProps {
   source: Source
@@ -30,10 +30,7 @@ const guides: Record<Source, PlatformGuide> = {
       'Click Export and wait for completion',
       'Upload the result.json file',
     ],
-    notes: [
-      'Export is only available in Telegram Desktop',
-      'Mobile app does not support export',
-    ],
+    notes: ['Export is only available in Telegram Desktop', 'Mobile app does not support export'],
   },
   whatsapp: {
     title: 'WhatsApp',
@@ -67,10 +64,7 @@ const guides: Record<Source, PlatformGuide> = {
       'Download and extract the archive',
       'Find messages/inbox/[chat]/message_1.json',
     ],
-    notes: [
-      'Request may take up to 48 hours to process',
-      'Archive will be sent to your email',
-    ],
+    notes: ['Request may take up to 48 hours to process', 'Archive will be sent to your email'],
   },
   discord: {
     title: 'Discord',
@@ -86,10 +80,7 @@ const guides: Record<Source, PlatformGuide> = {
       'Extract the archive',
       'Find messages/[channel_id]/messages.json',
     ],
-    notes: [
-      'Request may take up to 30 days to process',
-      'For DMs use third-party tools',
-    ],
+    notes: ['Request may take up to 30 days to process', 'For DMs use third-party tools'],
   },
 }
 
@@ -100,17 +91,23 @@ export const ExportGuide = memo(function ExportGuide({
 }: ExportGuideProps) {
   const guide = guides[source]
 
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }, [onClose])
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) {
+        onClose()
+      }
+    },
+    [onClose],
+  )
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose()
-    }
-  }, [onClose])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    },
+    [onClose],
+  )
 
   if (!isOpen) return null
 
@@ -131,11 +128,7 @@ export const ExportGuide = memo(function ExportGuide({
               How to export from {guide.title}
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            style={styles.closeButton}
-            aria-label="Close"
-          >
+          <button onClick={onClose} style={styles.closeButton} aria-label="Close">
             ✕
           </button>
         </div>
@@ -160,7 +153,9 @@ export const ExportGuide = memo(function ExportGuide({
               <span style={styles.notesTitle}>💡 Notes:</span>
               <ul style={styles.notesList}>
                 {guide.notes.map((note, index) => (
-                  <li key={index} style={styles.note}>{note}</li>
+                  <li key={index} style={styles.note}>
+                    {note}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -198,11 +193,7 @@ export const ExportGuideButton = memo(function ExportGuideButton({
         <span style={styles.helpIcon}>?</span>
         <span style={styles.helpText}>How to export?</span>
       </button>
-      <ExportGuide
-        source={source}
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-      />
+      <ExportGuide source={source} isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   )
 })

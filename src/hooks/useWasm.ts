@@ -6,7 +6,7 @@ interface WasmModule {
     source: string,
     format: string,
     includeTimestamps: boolean,
-    includeReplies: boolean
+    includeReplies: boolean,
   ) => string
   version: () => string
 }
@@ -20,7 +20,12 @@ interface UseWasmResult {
   isLoading: boolean
   isReady: boolean
   error: string | null
-  convert: (input: string, source: string, format: string, options?: ConvertOptions) => Promise<string>
+  convert: (
+    input: string,
+    source: string,
+    format: string,
+    options?: ConvertOptions,
+  ) => Promise<string>
   version: string | null
   retry: () => void
   retryCount: number
@@ -30,12 +35,12 @@ interface UseWasmResult {
 const ERROR_MESSAGES: Record<string, string> = {
   'Unknown source': 'Unknown source. Supported: Telegram, WhatsApp, Instagram, Discord',
   'Unknown format': 'Unknown format. Supported: CSV, JSON, JSONL',
-  'Failed to parse': 'Failed to parse file. Make sure it\'s an export from a supported messenger',
+  'Failed to parse': "Failed to parse file. Make sure it's an export from a supported messenger",
   'Invalid JSON': 'Invalid JSON. Check file integrity',
   'Empty input': 'File is empty or contains no messages',
-  'WASM': 'Failed to load converter. Try refreshing the page',
-  'network': 'Network error. Check your internet connection',
-  'default': 'An error occurred during conversion',
+  WASM: 'Failed to load converter. Try refreshing the page',
+  network: 'Network error. Check your internet connection',
+  default: 'An error occurred during conversion',
 }
 
 function humanizeError(error: string): string {
@@ -44,11 +49,11 @@ function humanizeError(error: string): string {
       return message
     }
   }
-  
+
   if (error.length < 100 && !error.includes('panicked') && !error.includes('wasm')) {
     return error
   }
-  
+
   return ERROR_MESSAGES.default
 }
 
@@ -63,10 +68,10 @@ export function useWasm(): UseWasmResult {
     try {
       setIsLoading(true)
       setError(null)
-      
+
       const wasm = await import('../wasm/chatpack_wasm.js')
       await wasm.default()
-      
+
       setModule(wasm as unknown as WasmModule)
       setVersion(wasm.version())
       setIsLoading(false)
@@ -83,7 +88,7 @@ export function useWasm(): UseWasmResult {
   }, [loadWasm, retryCount])
 
   const retry = useCallback(() => {
-    setRetryCount(prev => prev + 1)
+    setRetryCount((prev) => prev + 1)
   }, [])
 
   const convert = useCallback(
@@ -91,18 +96,18 @@ export function useWasm(): UseWasmResult {
       input: string,
       source: string,
       format: string,
-      options: ConvertOptions = {}
+      options: ConvertOptions = {},
     ): Promise<string> => {
       if (!module) {
         throw new Error('Converter not loaded. Refresh the page and try again.')
       }
-      
+
       if (!input || input.trim().length === 0) {
         throw new Error('File is empty or contains no data')
       }
-      
+
       const { timestamps = false, replays = false } = options
-      
+
       try {
         return module.convert(input, source, format, timestamps, replays)
       } catch (err) {
@@ -110,7 +115,7 @@ export function useWasm(): UseWasmResult {
         throw new Error(humanizeError(errorMessage))
       }
     },
-    [module]
+    [module],
   )
 
   return {
@@ -128,7 +133,7 @@ export function useWasm(): UseWasmResult {
 export function estimateProcessingTime(fileSize: number): string {
   const estimatedMessages = fileSize / 100
   const estimatedSeconds = estimatedMessages / 100000
-  
+
   if (estimatedSeconds < 1) {
     return 'less than a second'
   } else if (estimatedSeconds < 60) {

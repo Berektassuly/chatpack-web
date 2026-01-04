@@ -32,12 +32,15 @@ export const FormatDropdown = memo(function FormatDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSelect = useCallback((format: Format) => {
-    onChange(format)
-    setIsOpen(false)
-  }, [onChange])
+  const handleSelect = useCallback(
+    (format: Format) => {
+      onChange(format)
+      setIsOpen(false)
+    },
+    [onChange],
+  )
 
-  const selectedFormat = formats.find(f => f.id === value)!
+  const selectedFormat = formats.find((f) => f.id === value)!
 
   return (
     <div style={styles.container} ref={containerRef}>

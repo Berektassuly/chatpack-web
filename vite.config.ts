@@ -4,17 +4,13 @@ import wasm from 'vite-plugin-wasm'
 import topLevelAwait from 'vite-plugin-top-level-await'
 
 export default defineConfig({
-  plugins: [
-    react(),
-    wasm(),
-    topLevelAwait()
-  ],
+  plugins: [react(), wasm(), topLevelAwait()],
   base: '/',
   build: {
     target: 'esnext',
-    outDir: 'dist'
+    outDir: 'dist',
   },
   optimizeDeps: {
-    exclude: ['chatpack-wasm']
-  }
+    exclude: ['chatpack-wasm'],
+  },
 })

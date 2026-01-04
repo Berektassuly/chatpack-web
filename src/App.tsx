@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react'
 import { useWasm, needsProgressIndicator, estimateProcessingTime } from './hooks/useWasm'
 import { DropZone } from './components/DropZone'
-import { SourceDropdown, Source, detectSource } from './components/SourceDropdown'
+import { SourceDropdown } from './components/SourceDropdown'
+import { Source, detectSource } from './components/sourceTypes'
 import { FormatDropdown, Format } from './components/FormatDropdown'
 import { FlagsSelector, Flags } from './components/FlagsSelector'
 import { ConvertButton } from './components/ConvertButton'
@@ -19,15 +20,15 @@ interface ConversionResult {
 }
 
 export default function App() {
-  const { 
-    isLoading: wasmLoading, 
-    isReady: wasmReady, 
-    error: wasmError, 
+  const {
+    isLoading: wasmLoading,
+    isReady: wasmReady,
+    error: wasmError,
     convert,
     retry: retryWasm,
     retryCount,
   } = useWasm()
-  
+
   const [file, setFile] = useState<File | null>(null)
   const [source, setSource] = useState<Source>('telegram')
   const [format, setFormat] = useState<Format>('csv')
@@ -64,7 +65,7 @@ export default function App() {
     // Simulate progress for large files
     const showProgress = needsProgressIndicator(file.size)
     let progressInterval: ReturnType<typeof setInterval> | null = null
-    
+
     if (showProgress) {
       setProgress(0)
       let currentProgress = 0
@@ -81,7 +82,7 @@ export default function App() {
         timestamps: flags.timestamps,
         replays: flags.replays,
       })
-      
+
       // Complete progress
       if (progressInterval) {
         clearInterval(progressInterval)
@@ -93,8 +94,8 @@ export default function App() {
       const filename = `${baseName}_chatpack.${extension}`
 
       // Count messages
-      const lineCount = output.split('\n').filter(line => line.trim()).length
-      const messageCount = format === 'csv' ? lineCount - 1 : lineCount  // CSV has header
+      const lineCount = output.split('\n').filter((line) => line.trim()).length
+      const messageCount = format === 'csv' ? lineCount - 1 : lineCount // CSV has header
 
       setResult({
         content: output,
@@ -104,7 +105,7 @@ export default function App() {
         messageCount: Math.max(0, messageCount),
       })
       setStatus('success')
-      
+
       // Reset progress after success
       setTimeout(() => setProgress(undefined), 500)
     } catch (err) {
@@ -132,9 +133,8 @@ export default function App() {
   }, [result])
 
   // Show estimated time for large files
-  const estimatedTime = file && needsProgressIndicator(file.size) 
-    ? estimateProcessingTime(file.size) 
-    : null
+  const estimatedTime =
+    file && needsProgressIndicator(file.size) ? estimateProcessingTime(file.size) : null
 
   return (
     <div style={styles.app}>
@@ -147,20 +147,42 @@ export default function App() {
       <header style={styles.header}>
         <div style={styles.headerContent}>
           <a href="/" style={styles.logo} aria-label="chatpack — home">
-            <span style={styles.logoIcon} aria-hidden="true">📦</span>
+            <span style={styles.logoIcon} aria-hidden="true">
+              📦
+            </span>
             <span style={styles.logoText}>chatpack</span>
           </a>
           <nav style={styles.nav} aria-label="Main navigation">
-            <a href="https://github.com/berektassuly/chatpack" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
+            <a
+              href="https://github.com/berektassuly/chatpack"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.navLink}
+            >
               GitHub
             </a>
-            <a href="https://crates.io/crates/chatpack" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
+            <a
+              href="https://crates.io/crates/chatpack"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.navLink}
+            >
               Crates.io
             </a>
-            <a href="https://berektassuly.com/" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
+            <a
+              href="https://berektassuly.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.navLink}
+            >
               Blog
             </a>
-            <a href="https://www.linkedin.com/in/mukhammedali-berektassuly/" target="_blank" rel="noopener noreferrer" style={styles.navLink}>
+            <a
+              href="https://www.linkedin.com/in/mukhammedali-berektassuly/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.navLink}
+            >
               LinkedIn
             </a>
           </nav>
@@ -178,7 +200,9 @@ export default function App() {
             <p style={styles.subtitle}>
               Compress Telegram, WhatsApp, Instagram, Discord exports <strong>13x</strong>.
               <br />
-              <span style={styles.privacyNote}>🔒 Works in browser — files never leave your device.</span>
+              <span style={styles.privacyNote}>
+                🔒 Works in browser — files never leave your device.
+              </span>
             </p>
           </section>
 
@@ -186,7 +210,9 @@ export default function App() {
           <section style={styles.card} aria-label="Converter">
             {wasmLoading && (
               <div style={styles.wasmLoading} role="status" aria-live="polite">
-                <span style={styles.spinner} aria-hidden="true">⟳</span>
+                <span style={styles.spinner} aria-hidden="true">
+                  ⟳
+                </span>
                 <span>Loading converter...</span>
               </div>
             )}
@@ -221,7 +247,7 @@ export default function App() {
                       disabled={status === 'converting'}
                     />
                   </div>
-                  
+
                   <div style={styles.controlGroup}>
                     <div style={styles.controlHeader}>
                       <span style={styles.controlLabel}>OUTPUT FORMAT</span>
@@ -232,7 +258,7 @@ export default function App() {
                       disabled={status === 'converting'}
                     />
                   </div>
-                  
+
                   <div style={styles.controlGroup}>
                     <div style={styles.controlHeader}>
                       <span style={styles.controlLabel}>FLAGS</span>
@@ -256,9 +282,7 @@ export default function App() {
 
                 {/* Estimated time for large files */}
                 {file && estimatedTime && status !== 'success' && (
-                  <p style={styles.estimatedTime}>
-                    Estimated time: {estimatedTime}
-                  </p>
+                  <p style={styles.estimatedTime}>Estimated time: {estimatedTime}</p>
                 )}
 
                 {error && (
@@ -284,19 +308,25 @@ export default function App() {
           {/* Features */}
           <section style={styles.features} aria-label="Features">
             <div style={styles.feature}>
-              <span style={styles.featureIcon} aria-hidden="true">🔒</span>
+              <span style={styles.featureIcon} aria-hidden="true">
+                🔒
+              </span>
               <span style={styles.featureText}>
                 <strong>100% Private</strong> — processed locally in browser
               </span>
             </div>
             <div style={styles.feature}>
-              <span style={styles.featureIcon} aria-hidden="true">⚡</span>
+              <span style={styles.featureIcon} aria-hidden="true">
+                ⚡
+              </span>
               <span style={styles.featureText}>
                 <strong>Fast</strong> — 100K+ messages per second
               </span>
             </div>
             <div style={styles.feature}>
-              <span style={styles.featureIcon} aria-hidden="true">📦</span>
+              <span style={styles.featureIcon} aria-hidden="true">
+                📦
+              </span>
               <span style={styles.featureText}>
                 Also available as CLI: <code>cargo install chatpack</code>
               </span>
@@ -306,11 +336,21 @@ export default function App() {
           {/* Help text */}
           <p style={styles.helpText}>
             Having issues? Let me know on{' '}
-            <a href="https://github.com/berektassuly/chatpack/issues" target="_blank" rel="noopener noreferrer" style={styles.helpLink}>
+            <a
+              href="https://github.com/berektassuly/chatpack/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.helpLink}
+            >
               GitHub
             </a>{' '}
             or{' '}
-            <a href="https://t.me/berektassuly" target="_blank" rel="noopener noreferrer" style={styles.helpLink}>
+            <a
+              href="https://t.me/berektassuly"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.helpLink}
+            >
               Telegram
             </a>
           </p>
@@ -320,14 +360,22 @@ export default function App() {
       {/* Footer */}
       <footer style={styles.footer}>
         <div style={styles.footerContent}>
-          <span style={styles.footerCopyright}>
-            © 2025 Mukhammedali Berektassuly
-          </span>
+          <span style={styles.footerCopyright}>© 2025 Mukhammedali Berektassuly</span>
           <div style={styles.footerLinks}>
-            <a href="https://www.linkedin.com/in/mukhammedali-berektassuly/" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
+            <a
+              href="https://www.linkedin.com/in/mukhammedali-berektassuly/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.footerLink}
+            >
               LinkedIn
             </a>
-            <a href="https://github.com/berektassuly" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
+            <a
+              href="https://github.com/berektassuly"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.footerLink}
+            >
               GitHub
             </a>
           </div>
@@ -479,7 +527,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     animation: 'spin 1s linear infinite',
   },
-  
+
   // Controls Row - ровный грид
   controlsRow: {
     display: 'grid',

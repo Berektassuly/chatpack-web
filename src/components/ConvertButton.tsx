@@ -4,7 +4,7 @@ interface ConvertButtonProps {
   onClick: () => void
   disabled?: boolean
   loading?: boolean
-  progress?: number  // 0-100, optional progress indicator
+  progress?: number // 0-100, optional progress indicator
 }
 
 export const ConvertButton = memo(function ConvertButton({
@@ -28,31 +28,30 @@ export const ConvertButton = memo(function ConvertButton({
     >
       {loading ? (
         <>
-          <span style={styles.spinner} aria-hidden="true">⟳</span>
-          <span>
-            {showProgress 
-              ? `Конвертация... ${Math.round(progress)}%` 
-              : 'Конвертация...'
-            }
+          <span style={styles.spinner} aria-hidden="true">
+            ⟳
           </span>
+          <span>{showProgress ? `Конвертация... ${Math.round(progress)}%` : 'Конвертация...'}</span>
         </>
       ) : (
         <>
           <span>Конвертировать</span>
-          <span style={styles.arrow} aria-hidden="true">→</span>
+          <span style={styles.arrow} aria-hidden="true">
+            →
+          </span>
         </>
       )}
-      
+
       {/* Progress bar */}
       {showProgress && (
-        <div 
+        <div
           style={styles.progressBar}
           role="progressbar"
           aria-valuenow={progress}
           aria-valuemin={0}
           aria-valuemax={100}
         >
-          <div 
+          <div
             style={{
               ...styles.progressFill,
               width: `${progress}%`,
