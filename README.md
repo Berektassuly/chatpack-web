@@ -34,18 +34,18 @@ Raw chat exports waste **80%+** of context window tokens on JSON syntax and meta
 - **⚡ High Performance:** Powered by Rust, processing 100,000+ messages per second.
 - **📉 Token Efficient:** Reduces token usage by ~92% (CSV output) compared to raw JSON.
 - **🧩 Multi-Platform:** Supports Telegram, WhatsApp, Instagram, and Discord.
-- **🧠 Smart Processing:** 
+- **🧠 Smart Processing:**
   - Auto-detects source platform from filenames.
   - Merges consecutive messages from the same sender.
 - **🛠️ Configurable:** Toggle timestamps, reply context, and output formats (CSV, JSON, JSONL).
 
 ### Compression Results
 
-| Format | Input (Telegram) | Output | Savings |
-|--------|------------------|--------|-------------|
-| **CSV** | 11.2M tokens | 850K tokens | **92% (13x)** 🔥 |
-| JSONL | 11.2M tokens | 1.0M tokens | 91% (11x) |
-| JSON | 11.2M tokens | 1.3M tokens | 88% (8x) |
+| Format  | Input (Telegram) | Output      | Savings          |
+| ------- | ---------------- | ----------- | ---------------- |
+| **CSV** | 11.2M tokens     | 850K tokens | **92% (13x)** 🔥 |
+| JSONL   | 11.2M tokens     | 1.0M tokens | 91% (11x)        |
+| JSON    | 11.2M tokens     | 1.3M tokens | 88% (8x)         |
 
 ---
 
@@ -55,12 +55,12 @@ Raw chat exports waste **80%+** of context window tokens on JSON syntax and meta
 
 Detailed instructions are available inside the application, but here is a quick summary:
 
-| Platform | Instructions |
-|----------|--------------|
-| **Telegram** | Desktop App → Settings → Advanced → Export Telegram data → JSON (Machine-readable) |
-| **WhatsApp** | Chat Menu (⋮) → More → Export chat → "Without Media" (`.txt`) |
+| Platform      | Instructions                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------- |
+| **Telegram**  | Desktop App → Settings → Advanced → Export Telegram data → JSON (Machine-readable)        |
+| **WhatsApp**  | Chat Menu (⋮) → More → Export chat → "Without Media" (`.txt`)                             |
 | **Instagram** | Settings → Your activity → Download information → JSON → Messages only (`message_1.json`) |
-| **Discord** | Use [DiscordChatExporter](https://github.com/Tyrrrz/DiscordChatExporter) (JSON/TXT/CSV) |
+| **Discord**   | Use [DiscordChatExporter](https://github.com/Tyrrrz/DiscordChatExporter) (JSON/TXT/CSV)   |
 
 ### 2. Process
 
@@ -104,6 +104,7 @@ pnpm run dev
 ```bash
 pnpm run build
 ```
+
 This command compiles the Rust code to optimized WASM and builds the React application into the `dist/` folder.
 
 ### Testing
@@ -182,7 +183,7 @@ export function convert(
   source: string,
   format: string,
   includeTimestamps: boolean,
-  includeReplies: boolean
+  includeReplies: boolean,
 ): string
 ```
 
@@ -199,11 +200,11 @@ The `public/CNAME` file ensures the site is served at [chatpack.berektassuly.com
 
 ## Related Repositories
 
-| Repository | Description |
-|------------|-------------|
-| [chatpack](https://github.com/Berektassuly/chatpack) | Core Rust library |
+| Repository                                                   | Description       |
+| ------------------------------------------------------------ | ----------------- |
+| [chatpack](https://github.com/Berektassuly/chatpack)         | Core Rust library |
 | [chatpack-cli](https://github.com/Berektassuly/chatpack-cli) | Command-line tool |
-| [chatpack-web](https://github.com/Berektassuly/chatpack-web) | This repository |
+| [chatpack-web](https://github.com/Berektassuly/chatpack-web) | This repository   |
 
 ---
 
