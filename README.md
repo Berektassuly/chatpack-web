@@ -183,7 +183,7 @@ export function convert(
   format: string,
   includeTimestamps: boolean,
   includeReplies: boolean
-): string;
+): string
 ```
 
 ---
