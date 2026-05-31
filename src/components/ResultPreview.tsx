@@ -1,4 +1,5 @@
 import { memo, useState, useCallback } from 'react'
+import type { ConversionStats } from '../hooks/useWasm'
 
 interface ResultPreviewProps {
   content: string
@@ -6,6 +7,7 @@ interface ResultPreviewProps {
   originalSize: number
   outputSize: number
   messageCount?: number
+  stats?: ConversionStats
   onDownload: () => void
 }
 
@@ -18,6 +20,7 @@ export const ResultPreview = memo(function ResultPreview({
   originalSize,
   outputSize,
   messageCount,
+  stats,
   onDownload,
 }: ResultPreviewProps) {
   const [showPreview, setShowPreview] = useState(false)
@@ -82,6 +85,24 @@ export const ResultPreview = memo(function ResultPreview({
           </div>
         )}
       </div>
+
+      {stats && (
+        <div style={styles.pipelineStats}>
+          <span style={styles.pipelineItem}>Parsed {stats.original_count.toLocaleString()}</span>
+          <span style={styles.pipelineDivider}>/</span>
+          <span style={styles.pipelineItem}>Filtered {stats.filtered_count.toLocaleString()}</span>
+          <span style={styles.pipelineDivider}>/</span>
+          <span style={styles.pipelineItem}>Output {stats.merged_count.toLocaleString()}</span>
+          {stats.messages_saved > 0 && (
+            <>
+              <span style={styles.pipelineDivider}>/</span>
+              <span style={styles.pipelineAccent}>
+                Saved {stats.messages_saved.toLocaleString()} messages
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Preview toggle */}
       <button
@@ -186,6 +207,28 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '16px',
     fontWeight: 600,
     color: 'var(--text-primary)',
+  },
+  pipelineStats: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '16px',
+    padding: '10px 12px',
+    background: 'var(--bg-tertiary)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--radius-md)',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '11px',
+  },
+  pipelineItem: {
+    color: 'var(--text-secondary)',
+  },
+  pipelineDivider: {
+    color: 'var(--text-muted)',
+  },
+  pipelineAccent: {
+    color: 'var(--accent-green)',
   },
   previewToggle: {
     display: 'flex',

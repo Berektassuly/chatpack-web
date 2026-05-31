@@ -1,8 +1,11 @@
-import { memo } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 export interface Flags {
   timestamps: boolean
-  replays: boolean
+  ids: boolean
+  replies: boolean
+  edited: boolean
+  merge: boolean
 }
 
 interface FlagsSelectorProps {
@@ -13,7 +16,10 @@ interface FlagsSelectorProps {
 
 const flagsList: { key: keyof Flags; label: string }[] = [
   { key: 'timestamps', label: 'Timestamps' },
-  { key: 'replays', label: 'Replays' },
+  { key: 'ids', label: 'Message IDs' },
+  { key: 'replies', label: 'Replies' },
+  { key: 'edited', label: 'Edited time' },
+  { key: 'merge', label: 'Merge consecutive' },
 ]
 
 export const FlagsSelector = memo(function FlagsSelector({
@@ -21,91 +27,162 @@ export const FlagsSelector = memo(function FlagsSelector({
   onChange,
   disabled = false,
 }: FlagsSelectorProps) {
-  const handleToggle = (flag: keyof Flags) => {
-    onChange({
-      ...value,
-      [flag]: !value[flag],
-    })
-  }
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleToggle = useCallback(
+    (flag: keyof Flags) => {
+      onChange({
+        ...value,
+        [flag]: !value[flag],
+      })
+    },
+    [onChange, value],
+  )
+
+  const selectedCount = flagsList.filter(({ key }) => value[key]).length
+  const label = selectedCount === 0 ? 'No flags' : `${selectedCount} selected`
 
   return (
-    <div style={styles.container}>
-      {flagsList.map(({ key, label }) => (
-        <label
-          key={key}
+    <div style={styles.container} ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setIsOpen(false)
+          }
+        }}
+        disabled={disabled}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        style={{
+          ...styles.trigger,
+          ...(isOpen ? styles.triggerOpen : {}),
+          ...(disabled ? styles.triggerDisabled : {}),
+        }}
+      >
+        <span style={styles.value}>{label}</span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
           style={{
-            ...styles.checkbox,
-            ...(disabled ? styles.checkboxDisabled : {}),
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 150ms ease',
           }}
+          aria-hidden="true"
         >
-          <input
-            type="checkbox"
-            checked={value[key]}
-            onChange={() => handleToggle(key)}
-            disabled={disabled}
-            style={styles.input}
+          <path
+            d="M2.5 4.5L6 8L9.5 4.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
-          <span
-            style={{
-              ...styles.checkmark,
-              ...(value[key] ? styles.checkmarkChecked : {}),
-            }}
-          >
-            {value[key] && '✓'}
-          </span>
-          <span style={styles.label}>{label}</span>
-        </label>
-      ))}
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div style={styles.dropdown} role="menu" aria-label="Output flags">
+          {flagsList.map(({ key, label: flagLabel }) => (
+            <label key={key} style={styles.option}>
+              <input
+                type="checkbox"
+                checked={value[key]}
+                onChange={() => handleToggle(key)}
+                disabled={disabled}
+                style={styles.input}
+              />
+              <span style={styles.optionLabel}>{flagLabel}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   )
 })
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    padding: '8px 0',
+    position: 'relative',
+    width: '100%',
   },
-  checkbox: {
+  trigger: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    cursor: 'pointer',
-    userSelect: 'none',
-  },
-  checkboxDisabled: {
-    opacity: 0.5,
-    cursor: 'not-allowed',
-  },
-  input: {
-    position: 'absolute',
-    opacity: 0,
-    width: 0,
-    height: 0,
-  },
-  checkmark: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '20px',
-    height: '20px',
-    border: '1px solid var(--border-default)',
-    borderRadius: 'var(--radius-sm)',
-    background: 'var(--bg-tertiary)',
-    color: 'var(--accent-green)',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    transition: 'all var(--transition-fast)',
-    flexShrink: 0,
-  },
-  checkmarkChecked: {
-    background: 'var(--accent-green-glow)',
-    borderColor: 'var(--accent-green)',
-  },
-  label: {
+    justifyContent: 'space-between',
+    width: '100%',
+    padding: '12px 16px',
     fontFamily: 'var(--font-mono)',
     fontSize: '14px',
     color: 'var(--text-primary)',
+    background: 'var(--bg-tertiary)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-md)',
+    cursor: 'pointer',
+    transition: 'border-color var(--transition-fast), background var(--transition-fast)',
+  },
+  triggerOpen: {
+    borderColor: 'var(--accent-green)',
+  },
+  triggerDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+  value: {
+    flex: 1,
+    textAlign: 'left',
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 'calc(100% + 4px)',
+    left: 0,
+    right: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    padding: '8px',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-md)',
+    zIndex: 100,
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+  },
+  option: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    minHeight: '40px',
+    padding: '8px',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    userSelect: 'none',
+  },
+  input: {
+    width: '20px',
+    height: '20px',
+    margin: 0,
+    accentColor: 'var(--accent-green)',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  optionLabel: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '13px',
+    color: 'var(--text-primary)',
+    lineHeight: 1.3,
   },
 }

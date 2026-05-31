@@ -1,10 +1,16 @@
 import { useState, useCallback } from 'react'
-import { useWasm, needsProgressIndicator, estimateProcessingTime } from './hooks/useWasm'
+import {
+  useWasm,
+  needsProgressIndicator,
+  estimateProcessingTime,
+  type ConversionStats,
+} from './hooks/useWasm'
 import { DropZone } from './components/DropZone'
 import { SourceDropdown } from './components/SourceDropdown'
 import { Source, detectSource } from './components/sourceTypes'
 import { FormatDropdown, Format } from './components/FormatDropdown'
-import { FlagsSelector, Flags } from './components/FlagsSelector'
+import { FlagsSelector, type Flags } from './components/FlagsSelector'
+import { FiltersPanel, type Filters } from './components/FiltersPanel'
 import { ConvertButton } from './components/ConvertButton'
 import { ResultPreview } from './components/ResultPreview'
 import { ExportGuideButton } from './components/ExportGuide'
@@ -17,6 +23,7 @@ interface ConversionResult {
   originalSize: number
   outputSize: number
   messageCount?: number
+  stats?: ConversionStats
 }
 
 export default function App() {
@@ -24,7 +31,7 @@ export default function App() {
     isLoading: wasmLoading,
     isReady: wasmReady,
     error: wasmError,
-    convert,
+    convertWithReport,
     retry: retryWasm,
     retryCount,
   } = useWasm()
@@ -32,7 +39,14 @@ export default function App() {
   const [file, setFile] = useState<File | null>(null)
   const [source, setSource] = useState<Source>('telegram')
   const [format, setFormat] = useState<Format>('csv')
-  const [flags, setFlags] = useState<Flags>({ timestamps: false, replays: false })
+  const [flags, setFlags] = useState<Flags>({
+    timestamps: false,
+    ids: false,
+    replies: false,
+    edited: false,
+    merge: true,
+  })
+  const [filters, setFilters] = useState<Filters>({ sender: '', dateFrom: '', dateTo: '' })
   const [status, setStatus] = useState<ConversionStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ConversionResult | null>(null)
@@ -78,10 +92,17 @@ export default function App() {
 
     try {
       const content = await file.text()
-      const output = await convert(content, source, format, {
+      const report = await convertWithReport(content, source, format, {
         timestamps: flags.timestamps,
-        replays: flags.replays,
+        ids: flags.ids,
+        replies: flags.replies,
+        edited: flags.edited,
+        merge: flags.merge,
+        sender: filters.sender,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
       })
+      const output = report.output
 
       // Complete progress
       if (progressInterval) {
@@ -93,9 +114,10 @@ export default function App() {
       const baseName = file.name.replace(/\.[^/.]+$/, '')
       const filename = `${baseName}_chatpack.${extension}`
 
-      // Count messages
+      // Count messages. WASM report is authoritative when available.
       const lineCount = output.split('\n').filter((line) => line.trim()).length
-      const messageCount = format === 'csv' ? lineCount - 1 : lineCount // CSV has header
+      const messageCount =
+        report.stats?.merged_count ?? (format === 'csv' ? lineCount - 1 : lineCount)
 
       setResult({
         content: output,
@@ -103,6 +125,7 @@ export default function App() {
         originalSize: file.size,
         outputSize: new Blob([output]).size,
         messageCount: Math.max(0, messageCount),
+        stats: report.stats,
       })
       setStatus('success')
 
@@ -116,7 +139,7 @@ export default function App() {
       setError(err instanceof Error ? err.message : 'Conversion failed')
       setStatus('error')
     }
-  }, [file, wasmReady, convert, source, format, flags])
+  }, [file, wasmReady, convertWithReport, source, format, flags, filters])
 
   const handleDownload = useCallback(() => {
     if (!result) return
@@ -271,6 +294,12 @@ export default function App() {
                   </div>
                 </div>
 
+                <FiltersPanel
+                  value={filters}
+                  onChange={setFilters}
+                  disabled={status === 'converting'}
+                />
+
                 <div style={styles.actions}>
                   <ConvertButton
                     onClick={handleConvert}
@@ -298,6 +327,7 @@ export default function App() {
                     originalSize={result.originalSize}
                     outputSize={result.outputSize}
                     messageCount={result.messageCount}
+                    stats={result.stats}
                     onDownload={handleDownload}
                   />
                 )}
@@ -360,7 +390,7 @@ export default function App() {
       {/* Footer */}
       <footer style={styles.footer}>
         <div style={styles.footerContent}>
-          <span style={styles.footerCopyright}>© 2025 Mukhammedali Berektassuly</span>
+          <span style={styles.footerCopyright}>© 2026 Mukhammedali Berektassuly</span>
           <div style={styles.footerLinks}>
             <a
               href="https://www.linkedin.com/in/mukhammedali-berektassuly/"
@@ -531,7 +561,7 @@ const styles: Record<string, React.CSSProperties> = {
   // Controls Row - ровный грид
   controlsRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
     gap: '24px',
     marginTop: '24px',
     paddingTop: '24px',
